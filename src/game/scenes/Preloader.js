@@ -35,10 +35,43 @@ export class Preloader extends Scene
         this.load.setPath('assets');
 
         this.load.image('logo', 'logo.png');
+
+        // User-provided cinematic images (kept in dist/images).
+        this.load.image('cinematic-fabien', '../dist/images/fabien.png');
+        this.load.image('cinematic-ti994a-parsec', '../dist/images/TI994a et parsec.png');
+        this.load.image('cinematic-bureau', '../dist/images/bureau.jpg');
+        this.load.image('cinematic-boot-ti99', '../dist/images/bootTi99.jpg');
+        this.load.image('cinematic-screen-1', '../dist/images/InTheScreen1.png');
+        this.load.image('cinematic-screen-2', '../dist/images/InTheScreen2.png');
+        this.load.image('cinematic-fabien-panique-gif', '../dist/images/FabienPanique.gif');
+        this.load.image('cinematic-tourne-gif', '../dist/images/Tourne.gif');
+        this.load.image('cinematic-marche-gif', '../dist/images/Marche.gif');
+        this.load.image('cinematic-upload-running', '../dist/images/uploadRunning.png');
+        this.load.image('cinematic-upload-completed', '../dist/images/uploadCompleted.png');
+
+        // Bonus viewer media from dist/bonus.
+        this.load.image('bonus-fabien-hangar', '../dist/bonus/FabienAuHangar.png');
+        this.load.image('bonus-fabien-hangar-retro', '../dist/bonus/FabienAuHangarRetro.png');
+        this.load.image('bonus-fabien-pilote', '../dist/bonus/FabienPilote.png');
+        this.load.image('bonus-in-the-screen', '../dist/bonus/InTheScreen.png');
+        this.load.image('bonus-pixelise', '../dist/bonus/Pixelisé.png');
+        this.load.image('bonus-sur-son-joujou', '../dist/bonus/SurSonJoujou.png');
     }
 
     create ()
     {
+        const b = import.meta.env.BASE_URL;
+        this.registry.set('bonusMediaManifest', [
+            { name: 'Intro', type: 'video', url: b + 'dist/bonus/Intro.mp4' },
+            { name: 'Start', type: 'video', url: b + 'dist/bonus/Start.mp4' },
+            { name: 'FabienAuHangar', type: 'image', url: b + 'dist/bonus/FabienAuHangar.png' },
+            { name: 'FabienAuHangarRetro', type: 'image', url: b + 'dist/bonus/FabienAuHangarRetro.png' },
+            { name: 'FabienPilote', type: 'image', url: b + 'dist/bonus/FabienPilote.png' },
+            { name: 'InTheScreen', type: 'image', url: b + 'dist/bonus/InTheScreen.png' },
+            { name: 'Pixelisé', type: 'image', url: b + 'dist/bonus/Pixelisé.png' },
+            { name: 'SurSonJoujou', type: 'image', url: b + 'dist/bonus/SurSonJoujou.png' }
+        ]);
+
         this.scene.start('IntroCinematic');
     }
 }

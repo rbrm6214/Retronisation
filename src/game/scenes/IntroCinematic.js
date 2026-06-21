@@ -12,6 +12,8 @@ export class IntroCinematic extends Scene
         this.isExiting = false;
         this.slideDurationMs = 4600;
         this.slideDurationMultiplier = 3;
+        this.domOverlays = [];
+        this.rightArrowWasDown = false;
     }
 
     create ()
@@ -31,25 +33,13 @@ export class IntroCinematic extends Scene
             wordWrap: { width: 856 }
         });
 
-        this.progressText = this.add.text(940, 515, '', {
-            fontFamily: 'Arial Black',
-            fontSize: 16,
-            color: '#86e2ff'
-        }).setOrigin(1, 0);
-
-        this.skipText = this.add.text(512, 718, 'Cliquez ou appuyez sur une touche pour passer', {
-            fontFamily: 'Arial',
-            fontSize: 18,
-            color: '#b6cadc'
-        }).setOrigin(0.5, 0.5);
-
         this.slides = [
             {
                 text: 'Cette aventure commence le matin du dimanche 21 juin 2026, au marché aux puces de Mornas, petit village du Vaucluse.',
                 draw: () => this.drawFleaMarketMorning()
             },
             {
-                text: 'Fabien, 66 ans, cheveux blancs, barbe courte et lunettes, collectionneur passionné de vieilles machines, chine tranquillement dans les allées de la brocante.',
+                text: 'Fabien, 66 ans, collectionneur passionné de vieilles machines, chine tranquillement dans les allées de la brocante.',
                 draw: () => this.drawFabienPortrait()
             },
             {
@@ -57,19 +47,19 @@ export class IntroCinematic extends Scene
                 draw: () => this.drawTreasureFind()
             },
             {
-                text: 'De retour chez lui, il file dans son garage-bureau-entrepôt et fait de la place pour sa dernière acquisition, bien décidé à l\'essayer.',
+                text: 'De retour chez lui, il file dans son garage-bureau-entrepôt et fait de la place pour sa dernière acquisition, bien décidé de l\'essayer.',
                 draw: () => this.drawGarageRoom()
             },
             {
-                text: 'Il le branche à une prise, y connecte un écran, insère la cartouche et allume la bête.',
+                text: 'Il le branche à une prise, y connecte un écran, insère la cartouche et allume la bête. Ahhh, cet écran de démarrage... que de souvenirs.',
                 draw: () => this.drawPowerOn()
             },
             {
-                text: 'Ahhh, cet écran de démarrage... que de souvenirs. Mais la nostalgie ne dure pas : une erreur critique surgit.',
+                text: 'Mais la nostalgie ne dure pas, une erreur critique surgit. Fabien est frustré et se demande s\'il ne s\'est pas fait avoir par le vendeur...',
                 draw: () => this.drawCriticalError()
             },
             {
-                text: 'Un message parle d\'un besoin d\'aide. Fabien ne comprend pas, tapote le clavier et commence à douter du vendeur.',
+                text: 'Puis, un message parle d\'un besoin d\'aide. Fabien ne comprend pas il n\'avait encore jamais vue ça, il tapote le clavier mais pas de réactions',
                 draw: () => this.drawHelpMessage()
             },
             {
@@ -81,12 +71,13 @@ export class IntroCinematic extends Scene
                 draw: () => this.drawDigitalVortex()
             },
             {
-                text: 'Le titre apparaît : RETRONISATION. Aidez Fabien à s\'en sortir en finissant ce jeu !',
+                text: 'RETRONISATION. Aides Fabien à s\'en sortir en finissant ce jeu !',
                 draw: () => this.drawTitleCard(),
                 durationMs: 5600
             }
         ];
 
+        SoundEffects.stopAmbientMusic();
         SoundEffects.startIntroMusic();
 
         this.registerSkipControls();
@@ -99,15 +90,17 @@ export class IntroCinematic extends Scene
 
     registerSkipControls ()
     {
-        this.skipHandler = () => this.skipCinematic();
+        this.pointerSkipHandler = () => this.skipCinematic();
+        this.rightArrowKey = this.input.keyboard.addKey('RIGHT');
 
-        this.input.on('pointerdown', this.skipHandler);
-        this.input.keyboard.on('keydown', this.skipHandler);
+        this.input.on('pointerdown', this.pointerSkipHandler);
     }
 
     cleanupHandlers ()
     {
         SoundEffects.stopIntroMusic();
+
+        this.destroyDomOverlays();
 
         if (this.slideTimer)
         {
@@ -115,12 +108,33 @@ export class IntroCinematic extends Scene
             this.slideTimer = null;
         }
 
-        if (this.skipHandler)
+        if (this.pointerSkipHandler)
         {
-            this.input.off('pointerdown', this.skipHandler);
-            this.input.keyboard.off('keydown', this.skipHandler);
-            this.skipHandler = null;
+            this.input.off('pointerdown', this.pointerSkipHandler);
+            this.pointerSkipHandler = null;
         }
+
+        if (this.rightArrowKey)
+        {
+            this.input.keyboard.removeKey(this.rightArrowKey, true, true);
+            this.rightArrowKey = null;
+        }
+    }
+
+    advanceSlideWithRightArrow ()
+    {
+        if (this.isExiting)
+        {
+            return;
+        }
+
+        if (this.slideTimer)
+        {
+            this.slideTimer.remove(false);
+            this.slideTimer = null;
+        }
+
+        this.nextSlide();
     }
 
     showSlide (index)
@@ -138,17 +152,33 @@ export class IntroCinematic extends Scene
             this.slideTimer = null;
         }
 
+        this.destroyDomOverlays();
         this.illustrationContainer.removeAll(true);
 
         const slide = this.slides[index];
         slide.draw();
 
         this.storyText.setText(slide.text);
-        this.progressText.setText(`${index + 1}/${this.slides.length}`);
 
         const baseHold = slide.durationMs || this.slideDurationMs;
         const hold = baseHold * this.slideDurationMultiplier;
         this.slideTimer = this.time.delayedCall(hold, () => this.nextSlide());
+    }
+
+    update ()
+    {
+        if (this.isExiting || !this.rightArrowKey)
+        {
+            return;
+        }
+
+        const isDown = this.rightArrowKey.isDown;
+        if (isDown && !this.rightArrowWasDown)
+        {
+            this.advanceSlideWithRightArrow();
+        }
+
+        this.rightArrowWasDown = isDown;
     }
 
     nextSlide ()
@@ -212,6 +242,64 @@ export class IntroCinematic extends Scene
         this.cameras.main.fadeOut(350, 0, 0, 0);
     }
 
+    registerDomOverlay (overlay)
+    {
+        if (!overlay)
+        {
+            return;
+        }
+
+        this.domOverlays.push(overlay);
+    }
+
+    destroyDomOverlay (overlay)
+    {
+        if (!overlay)
+        {
+            return;
+        }
+
+        this.domOverlays = this.domOverlays.filter((item) => item !== overlay);
+
+        if (typeof HTMLElement !== 'undefined' && overlay instanceof HTMLElement)
+        {
+            if (overlay.parentNode)
+            {
+                overlay.parentNode.removeChild(overlay);
+            }
+
+            return;
+        }
+
+        if (overlay.active)
+        {
+            overlay.destroy();
+        }
+    }
+
+    destroyDomOverlays ()
+    {
+        for (const overlay of this.domOverlays)
+        {
+            if (typeof HTMLElement !== 'undefined' && overlay instanceof HTMLElement)
+            {
+                if (overlay.parentNode)
+                {
+                    overlay.parentNode.removeChild(overlay);
+                }
+
+                continue;
+            }
+
+            if (overlay && overlay.active)
+            {
+                overlay.destroy();
+            }
+        }
+
+        this.domOverlays = [];
+    }
+
     drawFleaMarketMorning ()
     {
         const sky = this.add.rectangle(512, 220, 1024, 440, 0x385d86);
@@ -231,6 +319,20 @@ export class IntroCinematic extends Scene
 
     drawFabienPortrait ()
     {
+        if (this.textures.exists('cinematic-fabien'))
+        {
+            const bg = this.add.rectangle(512, 220, 1024, 440, 0x1e2530);
+            const portrait = this.add.image(512, 220, 'cinematic-fabien');
+            const texture = this.textures.get('cinematic-fabien').getSourceImage();
+            const maxWidth = 540;
+            const maxHeight = 430;
+            const scale = Math.min(maxWidth / texture.width, maxHeight / texture.height);
+            portrait.setScale(scale);
+            portrait.setStrokeStyle?.(2, 0x7cf0ff, 0.35);
+            this.illustrationContainer.add([bg, portrait]);
+            return;
+        }
+
         const bg = this.add.rectangle(512, 220, 1024, 440, 0x2b313a);
         const halo = this.add.circle(512, 230, 152, 0x4e647f, 0.6);
         const head = this.add.circle(512, 214, 78, 0xe6c39e);
@@ -265,10 +367,30 @@ export class IntroCinematic extends Scene
         }).setOrigin(0.5);
 
         this.illustrationContainer.add([bg, table, box, computer, cart, sparkleA, sparkleB, label]);
+
+        if (this.textures.exists('cinematic-ti994a-parsec'))
+        {
+            const overlay = this.add.image(512, 252, 'cinematic-ti994a-parsec');
+            const texture = this.textures.get('cinematic-ti994a-parsec').getSourceImage();
+            const maxWidth = 520;
+            const maxHeight = 320;
+            const scale = Math.min(maxWidth / texture.width, maxHeight / texture.height);
+            overlay.setScale(scale);
+            overlay.setRotation(-0.035);
+            this.illustrationContainer.add(overlay);
+        }
     }
 
     drawGarageRoom ()
     {
+        if (this.textures.exists('cinematic-bureau'))
+        {
+            const image = this.add.image(512, 220, 'cinematic-bureau');
+            image.setDisplaySize(1024, 440);
+            this.illustrationContainer.add([image]);
+            return;
+        }
+
         const wall = this.add.rectangle(512, 200, 1024, 400, 0x242c37);
         const floor = this.add.rectangle(512, 390, 1024, 210, 0x3b2d24);
         const shelfA = this.add.rectangle(220, 228, 230, 230, 0x4d3a2d).setStrokeStyle(2, 0x1e150f);
@@ -287,11 +409,33 @@ export class IntroCinematic extends Scene
         const computer = this.add.rectangle(430, 296, 210, 84, 0xbec6cf).setStrokeStyle(2, 0x27313c);
         const monitor = this.add.rectangle(640, 252, 250, 152, 0x1f2c38).setStrokeStyle(3, 0x536c84);
         const screen = this.add.rectangle(640, 252, 220, 122, 0x0d1721);
-        const signal = this.add.rectangle(640, 252, 180, 12, 0x69ffa1);
+        let signal = null;
+        let bootImage = null;
+        if (this.textures.exists('cinematic-boot-ti99'))
+        {
+            bootImage = this.add.image(640, 252, 'cinematic-boot-ti99');
+            bootImage.setDisplaySize(238, 136);
+        }
+        else
+        {
+            signal = this.add.rectangle(640, 252, 180, 12, 0x69ffa1);
+        }
         const cableA = this.add.line(0, 0, 530, 334, 600, 312, 0x262626).setLineWidth(3);
         const cableB = this.add.line(0, 0, 330, 296, 260, 360, 0x262626).setLineWidth(3);
 
-        this.illustrationContainer.add([bg, desk, computer, monitor, screen, signal, cableA, cableB]);
+        const sceneParts = [bg, desk, computer, monitor, screen, cableA, cableB];
+        if (signal)
+        {
+            sceneParts.push(signal);
+        }
+
+        this.illustrationContainer.add(sceneParts);
+
+        if (bootImage)
+        {
+            // Added after monitor/screen so it stays visible in front.
+            this.illustrationContainer.add(bootImage);
+        }
     }
 
     drawCriticalError ()
@@ -319,7 +463,7 @@ export class IntroCinematic extends Scene
         const bg = this.add.rectangle(512, 220, 1024, 440, 0x181d2a);
         const monitor = this.add.rectangle(512, 225, 640, 330, 0x202a38).setStrokeStyle(3, 0x6a86a1);
         const screen = this.add.rectangle(512, 225, 590, 275, 0x05080f);
-        const lines = this.add.text(512, 208, 'NEED HELP\nPLEASE REPAIR SYSTEM\nKEYBOARD RESPONSE REQUIRED', {
+        const lines = this.add.text(512, 208, 'NEED HELP\nPLEASE COME ON\nNOW!!!!', {
             fontFamily: 'Courier New',
             fontSize: 30,
             color: '#8afcc0',
@@ -342,12 +486,78 @@ export class IntroCinematic extends Scene
             color: '#9fd9ff'
         }).setOrigin(0.5);
         const barBg = this.add.rectangle(512, 236, 440, 36, 0x1c2736).setStrokeStyle(2, 0x7dd5ff);
-        const bar = this.add.rectangle(512 - 216, 236, 432, 26, 0x7cf0ff).setOrigin(0, 0.5);
+        const bar = this.add.rectangle(512 - 216, 236, 8, 26, 0x7cf0ff).setOrigin(0, 0.5);
         const p1 = this.add.rectangle(760, 306, 20, 20, 0xffd37e);
         const p2 = this.add.rectangle(786, 288, 20, 20, 0xe6c39e);
         const p3 = this.add.rectangle(812, 320, 20, 20, 0x8ec5ff);
 
         this.illustrationContainer.add([bg, monitor, screen, label, barBg, bar, p1, p2, p3]);
+
+        const slide = this.slides?.[7];
+        const baseHold = slide?.durationMs || this.slideDurationMs;
+        const fullSlideMs = baseHold * this.slideDurationMultiplier;
+        const halfSlideMs = (baseHold * this.slideDurationMultiplier) / 2;
+
+        let uploadRunning = null;
+        let uploadCompleted = null;
+
+        if (this.textures.exists('cinematic-upload-running'))
+        {
+            const runningTexture = this.textures.get('cinematic-upload-running').getSourceImage();
+            const runningMaxWidth = 500;
+            const runningMaxHeight = 192;
+            const runningScale = Math.min(runningMaxWidth / runningTexture.width, runningMaxHeight / runningTexture.height);
+            uploadRunning = this.add.image(236, 398, 'cinematic-upload-running').setScale(runningScale).setDepth(4);
+            this.illustrationContainer.add(uploadRunning);
+
+            this.tweens.add({
+                targets: uploadRunning,
+                x: uploadRunning.x + 150,
+                duration: halfSlideMs,
+                ease: 'Sine.easeInOut'
+            });
+        }
+
+        this.tweens.add({
+            targets: bar,
+            width: 432,
+            duration: fullSlideMs,
+            ease: 'Linear'
+        });
+
+        const swapToCompleted = () => {
+            if (this.currentSlide !== 7)
+            {
+                return;
+            }
+
+            if (uploadRunning)
+            {
+                uploadRunning.destroy();
+                uploadRunning = null;
+            }
+
+            if (!this.textures.exists('cinematic-upload-completed') || uploadCompleted)
+            {
+                return;
+            }
+
+            const completedTexture = this.textures.get('cinematic-upload-completed').getSourceImage();
+            const completedMaxWidth = 580;
+            const completedMaxHeight = 220;
+            const completedScale = Math.min(completedMaxWidth / completedTexture.width, completedMaxHeight / completedTexture.height);
+            uploadCompleted = this.add.image(386, 398, 'cinematic-upload-completed').setScale(completedScale).setDepth(4);
+            this.illustrationContainer.add(uploadCompleted);
+
+            this.tweens.add({
+                targets: uploadCompleted,
+                x: uploadCompleted.x + 150,
+                duration: halfSlideMs,
+                ease: 'Sine.easeInOut'
+            });
+        };
+
+        this.time.delayedCall(halfSlideMs, swapToCompleted);
 
         this.tweens.add({
             targets: [p1, p2, p3],
@@ -364,11 +574,133 @@ export class IntroCinematic extends Scene
         const ringA = this.add.circle(512, 220, 180).setStrokeStyle(6, 0x6ab7ff, 0.7);
         const ringB = this.add.circle(512, 220, 132).setStrokeStyle(4, 0x4a92ea, 0.7);
         const ringC = this.add.circle(512, 220, 90).setStrokeStyle(3, 0x8be7ff, 0.7);
-        const fabien = this.add.rectangle(372, 260, 68, 112, 0xe6c39e);
         const monitor = this.add.rectangle(700, 220, 210, 160, 0x1f2c3a).setStrokeStyle(3, 0x6f8aa6);
+        const screen = this.add.rectangle(700, 220, 186, 134, 0x0a1018);
         const beam = this.add.triangle(0, 0, 510, 175, 770, 145, 770, 295, 0x67d9ff, 0.35);
+        let screenImage1 = null;
+        let screenGifOverlay = null;
 
-        this.illustrationContainer.add([bg, ringA, ringB, ringC, beam, fabien, monitor]);
+        if (this.textures.exists('cinematic-screen-1'))
+        {
+            screenImage1 = this.add.image(700, 220, 'cinematic-screen-1').setDisplaySize(182, 130);
+        }
+
+        const marker = this.add.rectangle(372, 260, 68, 68, 0xffd37e).setStrokeStyle(3, 0xfff1b5, 0.9);
+        let tourneOverlay = null;
+
+        const canUseDomGif = typeof document !== 'undefined';
+        if (canUseDomGif)
+        {
+            const gameContainer = document.getElementById('game-container');
+            const canvas = gameContainer?.querySelector('canvas');
+
+            if (gameContainer && canvas)
+            {
+                if (window.getComputedStyle(gameContainer).position === 'static')
+                {
+                    gameContainer.style.position = 'relative';
+                }
+
+                const tourneGifImg = document.createElement('img');
+                tourneGifImg.src = import.meta.env.BASE_URL + 'dist/images/Tourne.gif';
+                tourneGifImg.alt = 'Tourne';
+                tourneGifImg.style.width = '100%';
+                tourneGifImg.style.height = '100%';
+                tourneGifImg.style.objectFit = 'contain';
+                tourneGifImg.style.pointerEvents = 'none';
+                tourneGifImg.style.display = 'block';
+
+                tourneOverlay = document.createElement('div');
+                tourneOverlay.style.position = 'absolute';
+                tourneOverlay.style.width = '60px';
+                tourneOverlay.style.height = '60px';
+                tourneOverlay.style.pointerEvents = 'none';
+                tourneOverlay.style.zIndex = '30';
+                tourneOverlay.style.transform = 'translate(-50%, -50%)';
+                tourneOverlay.appendChild(tourneGifImg);
+                gameContainer.appendChild(tourneOverlay);
+                this.registerDomOverlay(tourneOverlay);
+
+                tourneGifImg.onerror = () => {
+                    console.warn('Impossible de charger /dist/images/Tourne.gif pour animation GIF.');
+                };
+
+                const panicGifImg = document.createElement('img');
+                panicGifImg.src = import.meta.env.BASE_URL + 'dist/images/FabienPanique.gif';
+                panicGifImg.alt = 'FabienPanique';
+                panicGifImg.style.width = '100%';
+                panicGifImg.style.height = '100%';
+                panicGifImg.style.objectFit = 'cover';
+                panicGifImg.style.pointerEvents = 'none';
+                panicGifImg.style.display = 'block';
+
+                screenGifOverlay = document.createElement('div');
+                screenGifOverlay.style.position = 'absolute';
+                screenGifOverlay.style.width = '182px';
+                screenGifOverlay.style.height = '130px';
+                screenGifOverlay.style.pointerEvents = 'none';
+                screenGifOverlay.style.zIndex = '20';
+                screenGifOverlay.style.transform = 'translate(-50%, -50%)';
+                screenGifOverlay.style.display = 'none';
+                screenGifOverlay.appendChild(panicGifImg);
+                gameContainer.appendChild(screenGifOverlay);
+                this.registerDomOverlay(screenGifOverlay);
+
+                panicGifImg.onerror = () => {
+                    console.warn('Impossible de charger /dist/images/FabienPanique.gif pour animation GIF.');
+                };
+            }
+        }
+
+        const updateTourneOverlayPosition = () => {
+            if (!tourneOverlay)
+            {
+                return;
+            }
+
+            const gameContainer = document.getElementById('game-container');
+            const canvas = gameContainer?.querySelector('canvas');
+            if (!gameContainer || !canvas)
+            {
+                return;
+            }
+
+            const containerRect = gameContainer.getBoundingClientRect();
+            const canvasRect = canvas.getBoundingClientRect();
+            const scaleX = canvasRect.width / this.scale.width;
+            const scaleY = canvasRect.height / this.scale.height;
+            const left = (canvasRect.left - containerRect.left) + (marker.x * scaleX);
+            const top = (canvasRect.top - containerRect.top) + (marker.y * scaleY);
+            const overlaySize = Math.max(56, Math.round(60 * Math.min(scaleX, scaleY)));
+
+            tourneOverlay.style.left = `${left}px`;
+            tourneOverlay.style.top = `${top}px`;
+            tourneOverlay.style.width = `${overlaySize}px`;
+            tourneOverlay.style.height = `${overlaySize}px`;
+
+            if (screenGifOverlay)
+            {
+                const monitorLeft = (canvasRect.left - containerRect.left) + (700 * scaleX);
+                const monitorTop = (canvasRect.top - containerRect.top) + (220 * scaleY);
+                const monitorWidth = Math.round(182 * scaleX);
+                const monitorHeight = Math.round(130 * scaleY);
+
+                screenGifOverlay.style.left = `${monitorLeft}px`;
+                screenGifOverlay.style.top = `${monitorTop}px`;
+                screenGifOverlay.style.width = `${monitorWidth}px`;
+                screenGifOverlay.style.height = `${monitorHeight}px`;
+            }
+        };
+
+        this.illustrationContainer.add([bg, ringA, ringB, ringC, beam, monitor, screen]);
+
+        if (screenImage1)
+        {
+            this.illustrationContainer.add(screenImage1);
+        }
+
+        this.illustrationContainer.add(marker);
+        updateTourneOverlayPosition();
 
         this.tweens.add({
             targets: [ringA, ringB, ringC],
@@ -378,13 +710,33 @@ export class IntroCinematic extends Scene
         });
 
         this.tweens.add({
-            targets: fabien,
-            x: 560,
+            targets: marker,
+            x: 700,
             y: 220,
-            scaleX: 0.45,
-            scaleY: 0.45,
-            duration: 2100,
-            ease: 'Sine.easeIn'
+            duration: 8200,
+            ease: 'Sine.easeInOut',
+            onUpdate: () => {
+                updateTourneOverlayPosition();
+            },
+            onComplete: () => {
+                marker.destroy();
+
+                if (tourneOverlay)
+                {
+                    this.destroyDomOverlay(tourneOverlay);
+                    tourneOverlay = null;
+                }
+
+                if (screenImage1)
+                {
+                    screenImage1.setVisible(false);
+                }
+
+                if (screenGifOverlay)
+                {
+                    screenGifOverlay.style.display = 'block';
+                }
+            }
         });
     }
 

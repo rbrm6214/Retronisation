@@ -60,6 +60,8 @@ export class Game extends Scene
         this.completeRoundAfterCurrentBelt = false;
         this.roundSummaryOverlay = null;
         this.audioPauseOverlay = null;
+        this.pauseOverlay = null;
+        this.isPaused = false;
         this.activeMiniGameChallenge = null;
         this.manualUpgradePrompt = null;
         this.manualMiniGamePreviewOverlay = null;
@@ -88,7 +90,8 @@ export class Game extends Scene
         };
         this.waveStats = {
             shots: 0,
-            wasFuelAlwaysEmpty: false
+            wasFuelAlwaysEmpty: false,
+            boostsAtWaveStart: 0
         };
         this.currentBeltStats = {
             spawned: 0,
@@ -234,10 +237,17 @@ export class Game extends Scene
             action2left: 'SHIFT',
             action2right: 'SHIFT',
             debug: 'K',
-            menu: 'ESC'
+            menu: 'ESC',
+            pauseP: 'P',
+            pauseBreak: 'PAUSE'
         });
 
         this.input.keyboard.on('keydown-K', () => {
+            if (!this.isPaused)
+            {
+                return;
+            }
+
             this.debugCollisionEnabled = !this.debugCollisionEnabled;
             this.setNotice(this.debugCollisionEnabled ? 'Debug collisions: ON' : 'Debug collisions: OFF');
             this.debugDistanceText.setVisible(this.debugCollisionEnabled);
@@ -248,8 +258,20 @@ export class Game extends Scene
             }
         });
 
+        this.pauseHotkeyHandler = () => {
+            this.togglePauseMenu();
+        };
+
+        this.input.keyboard.on('keydown-P', this.pauseHotkeyHandler);
+        this.input.keyboard.on('keydown-PAUSE', this.pauseHotkeyHandler);
+        this.input.keyboard.on('keydown-ESC', this.pauseHotkeyHandler);
+        this.input.keyboard.on('keydown-ESCAPE', this.pauseHotkeyHandler);
+
         this.input.keyboard.on('keydown', (event) => {
-            this.updateGodSequence(event.key);
+            if (this.isPaused)
+            {
+                this.updateGodSequence(event.key);
+            }
         });
 
         this.configureWavePlan();
@@ -274,7 +296,7 @@ export class Game extends Scene
             return;
         }
 
-        if (this.roundSummaryOverlay || this.audioPauseOverlay)
+        if (this.roundSummaryOverlay || this.audioPauseOverlay || this.isPaused)
         {
             SoundEffects.stopManeuverThruster();
             SoundEffects.stopBoostThruster();
@@ -518,6 +540,7 @@ export class Game extends Scene
         this.enemySpawnTimer = Math.min(...this.waveSpawnPlan.map((entry) => entry.config.spawnInterval));
         this.waveStats.shots = 0;
         this.waveStats.wasFuelAlwaysEmpty = this.playerState.fuel <= 0;
+        this.waveStats.boostsAtWaveStart = this.roundStats.boostsUsed;
     }
 
     isWaveSpawnPlanComplete ()
@@ -1167,6 +1190,11 @@ export class Game extends Scene
 
     updateGodSequence (key)
     {
+        if (!this.isPaused)
+        {
+            return;
+        }
+
         if (!key || key.length !== 1)
         {
             return;
@@ -1429,8 +1457,13 @@ export class Game extends Scene
     completeWave ()
     {
         const destroyedRatio = this.spawnedEnemies > 0 ? (this.destroyedEnemies / this.spawnedEnemies) : 0;
+        const asteroidDestroyedRatio = this.currentBeltStats.spawned > 0
+            ? (this.currentBeltStats.destroyed / this.currentBeltStats.spawned)
+            : 0;
+        const boostsUsedThisWave = Math.max(0, this.roundStats.boostsUsed - (this.waveStats.boostsAtWaveStart ?? 0));
 
         this.roundStats.enemyWaveRatios.push(destroyedRatio);
+        this.roundStats.asteroidWaveRatios.push(asteroidDestroyedRatio);
 
         if (this.waveStats.wasFuelAlwaysEmpty)
         {
@@ -1442,6 +1475,21 @@ export class Game extends Scene
         if (this.waveStats.shots === 0)
         {
             this.addScore(GAME_BALANCE.scoring.waveNoShotBonus);
+        }
+
+        if (destroyedRatio >= 0.75)
+        {
+            this.addScore(100);
+        }
+
+        if (asteroidDestroyedRatio >= 0.75)
+        {
+            this.addScore(100);
+        }
+
+        if (boostsUsedThisWave >= 3)
+        {
+            this.addScore(100);
         }
 
         this.completeRoundAfterCurrentBelt = this.waveInRound >= this.wavesInCurrentRound;
@@ -1461,7 +1509,7 @@ export class Game extends Scene
         this.roundStats.hullRepairWasPossible = this.playerState.hull < this.getMaxHullWithUpgrades();
 
         const enemyCleanupOnAllWaves = this.roundStats.enemyWaveRatios.length > 0 &&
-            this.roundStats.enemyWaveRatios.every((ratio) => ratio >= 0.9);
+            this.roundStats.enemyWaveRatios.every((ratio) => ratio >= 0.75);
         const asteroidCleanupOnAllWaves = this.roundStats.asteroidWaveRatios.length > 0 &&
             this.roundStats.asteroidWaveRatios.every((ratio) => ratio > 0.75);
         const survivantAchieved = !this.roundStats.lostHullDuringRound;
@@ -1520,7 +1568,7 @@ export class Game extends Scene
             details.push(`Points Pacifiste +${Math.round(GAME_BALANCE.scoring.pacifisteBonus * this.scoreMultiplier)}`);
         }
 
-        if (this.roundStats.boostsUsed >= 3)
+        if (this.roundStats.boostsUsed >= 7)
         {
             this.addScore(GAME_BALANCE.scoring.piloteBonus);
             details.push(`Points Pilote +${Math.round(GAME_BALANCE.scoring.piloteBonus * this.scoreMultiplier)}`);
@@ -1540,7 +1588,9 @@ export class Game extends Scene
                 this.scene.start('Victory', {
                     score: this.score,
                     round: this.roundIndex,
-                    wave: this.waveInRound
+                    wave: this.waveInRound,
+                    godMode: this.godMode,
+                    bugUsed: this.score >= 999999
                 });
                 return;
             }
@@ -2050,6 +2100,11 @@ export class Game extends Scene
                     {
                         this.playerState.shieldHealth = currentUpgrades[branch.key];
                     }
+                    else if (branch.key === 'reservoir')
+                    {
+                        // Force immediate cockpit refresh so fuel gauge reflects new reservoir capacity.
+                        this.refreshHud();
+                    }
 
                     this.upgradeOverlayPanel.destroy(true);
                     this.upgradeOverlayPanel = null;
@@ -2063,12 +2118,13 @@ export class Game extends Scene
             upgradePanel.add([iconText, labelText, levelText, upgradeBtn]);
         }
 
-        const manualBtnY = this.worldHeight * 0.5 + 90;
+        const manualBtnY = this.worldHeight * 0.5 + 130;
+        const actionButtonsY = manualBtnY + 58;
         const canUseManual = !this.playerState.manualUpgradeUsed;
 
         const [retourBg, retourText] = this.createSummaryButton(
             this.worldWidth * 0.5 - 280,
-            manualBtnY + 58,
+            actionButtonsY,
             160,
             54,
             'RETOUR',
@@ -2086,7 +2142,7 @@ export class Game extends Scene
 
         const [reprendreBg, reprendre_Text] = this.createSummaryButton(
             this.worldWidth * 0.5,
-            manualBtnY + 58,
+            actionButtonsY,
             180,
             54,
             'REPRENDRE',
@@ -2114,10 +2170,10 @@ export class Game extends Scene
 
         const [manuelBg, manuel_Text] = this.createSummaryButton(
             this.worldWidth * 0.5 + 280,
-            manualBtnY + 58,
+            actionButtonsY,
             200,
             54,
-            canUseManual ? 'MANUEL +1' : 'MANUEL [X]',
+            canUseManual ? 'MANUEL +1' : 'MANUEL 0',
             () => {
                 if (!canUseManual)
                 {
@@ -2150,7 +2206,7 @@ export class Game extends Scene
         }
         else
         {
-            manuel_Text.setColor('#5b6f80');
+            manuel_Text.setColor('#ff4d4d');
         }
 
         upgradePanel.add([retourBg, retourText, reprendreBg, reprendre_Text, manuelBg, manuel_Text]);
@@ -2315,13 +2371,17 @@ export class Game extends Scene
             case 'space-invaders':
                 return ['Deplacement: Fleches Gauche / Droite (Q / D)', 'Tir: SPACE'];
             case 'tetris':
-                return ['Deplacement: Fleches Gauche / Droite', 'Rotation: Fleche Haut ou Bas', 'Drop instantane: SPACE'];
+                return ['Deplacement: Fleches Gauche / Droite (Q / D)', 'Rotation: Fleche Haut/Bas (Z / S)', 'Drop instantane: SPACE'];
             case 'pacman':
-                return ['Deplacement: Fleches directionnelles'];
+                return ['Deplacement: Fleches directionnelles (Z / Q / S / D)'];
             case 'arkanoid':
                 return ['Deplacement raquette: Fleches Gauche / Droite (Q / D)'];
             case 'pinball':
-                return ['Flippers: Fleches Gauche / Droite (Q / D)', 'Lanceur: maintenir puis relacher SPACE'];
+                return [
+                    'Flippers: Fleches Gauche/Droite, Q/D, Shift Gauche/Droit',
+                    'Lanceur: maintenir puis relacher Fleche Bas (ou S)',
+                    'Tilt: SPACE (3 fois de suite = TILT, flippers bloques)'
+                ];
             default:
                 return ['Commandes: Fleches et SPACE'];
         }
@@ -2595,7 +2655,8 @@ export class Game extends Scene
         const panelHeight = isFinalRound ? 420 : 500;
         const bg = this.add.rectangle(this.worldWidth * 0.5, this.worldHeight * 0.5, 760, panelHeight, 0x061124, 0.94)
             .setStrokeStyle(2, 0x7cf0ff, 0.45);
-        const title = this.add.text(this.worldWidth * 0.5, this.worldHeight * 0.5 - (isFinalRound ? 140 : 182), 'Bravo, mais c\'est pas fini', {
+        const titleLabel = isFinalRound ? 'Houra, c\'est une victoire !' : 'Bravo, mais c\'est pas fini';
+        const title = this.add.text(this.worldWidth * 0.5, this.worldHeight * 0.5 - (isFinalRound ? 140 : 182), titleLabel, {
             fontFamily: 'Arial Black',
             fontSize: 38,
             color: '#f4f7fb'
@@ -2608,7 +2669,13 @@ export class Game extends Scene
             lineSpacing: 8
         }).setOrigin(0.5);
 
-        summaryContent.add([bg, title, body]);
+        const stationLabel = this.add.text(this.worldWidth * 0.5, this.worldHeight * 0.5 + 90, 'Station', {
+            fontFamily: 'Arial Black',
+            fontSize: 30,
+            color: '#7cf0ff'
+        }).setOrigin(0.5).setVisible(!isFinalRound);
+
+        summaryContent.add([bg, title, body, stationLabel]);
         panel.add(summaryContent);
         this.roundSummaryOverlay = panel;
         this.repairOverlayPanel = null;
@@ -2820,11 +2887,6 @@ export class Game extends Scene
 
     endAsteroidBelt ()
     {
-        const beltDestroyedRatio = this.currentBeltStats.spawned > 0
-            ? (this.currentBeltStats.destroyed / this.currentBeltStats.spawned)
-            : 0;
-
-        this.roundStats.asteroidWaveRatios.push(beltDestroyedRatio);
         this.gamePhase = 'belt-exit';
         this.transitionTimer = 0;
     }
@@ -4079,7 +4141,8 @@ export class Game extends Scene
             return;
         }
 
-        const panel = this.add.container(0, 0).setDepth(130);
+        const panelDepth = this.isPaused ? 140 : 130;
+        const panel = this.add.container(0, 0).setDepth(panelDepth);
         const bg = this.add.rectangle(this.worldWidth * 0.5, this.worldHeight * 0.5, 660, 430, 0x061124, 0.95)
             .setStrokeStyle(2, 0x7cf0ff, 0.5);
         const title = this.add.text(this.worldWidth * 0.5, this.worldHeight * 0.5 - 170, 'CONFIGURATION AUDIO', {
@@ -4200,6 +4263,111 @@ export class Game extends Scene
         ]);
 
         this.audioPauseOverlay = panel;
+    }
+
+    isPauseToggleEvent (event)
+    {
+        const key = `${event?.key ?? ''}`.toUpperCase();
+        const code = `${event?.code ?? ''}`.toUpperCase();
+
+        return key === 'P' || key === 'ESCAPE' || key === 'PAUSE' || code === 'PAUSE';
+    }
+
+    togglePauseMenu ()
+    {
+        if (this.roundSummaryOverlay || this.activeMiniGameChallenge)
+        {
+            return;
+        }
+
+        if (this.isPaused)
+        {
+            this.closePauseMenu();
+            return;
+        }
+
+        this.openPauseMenu();
+    }
+
+    openPauseMenu ()
+    {
+        if (this.pauseOverlay || this.roundSummaryOverlay)
+        {
+            return;
+        }
+
+        this.isPaused = true;
+        SoundEffects.stopManeuverThruster();
+        SoundEffects.stopBoostThruster();
+
+        const panel = this.add.container(0, 0).setDepth(132);
+        const bg = this.add.rectangle(this.worldWidth * 0.5, this.worldHeight * 0.5, 620, 380, 0x061124, 0.95)
+            .setStrokeStyle(2, 0x7cf0ff, 0.55);
+        const title = this.add.text(this.worldWidth * 0.5, this.worldHeight * 0.5 - 130, 'PAUSE', {
+            fontFamily: 'Arial Black',
+            fontSize: 44,
+            color: '#f4f7fb'
+        }).setOrigin(0.5);
+        const hint = this.add.text(this.worldWidth * 0.5, this.worldHeight * 0.5 - 86, 'P / Echap / Pause pour reprendre', {
+            fontFamily: 'Courier',
+            fontSize: 16,
+            color: '#9cd8ff'
+        }).setOrigin(0.5);
+
+        const [audioBg, audioText] = this.createSummaryButton(
+            this.worldWidth * 0.5,
+            this.worldHeight * 0.5 - 18,
+            330,
+            56,
+            'CONFIG AUDIO',
+            () => this.openAudioPausePanel()
+        );
+
+        const [resumeBg, resumeText] = this.createSummaryButton(
+            this.worldWidth * 0.5,
+            this.worldHeight * 0.5 + 56,
+            330,
+            56,
+            'REPRENDRE',
+            () => this.closePauseMenu()
+        );
+
+        const [menuBg, menuText] = this.createSummaryButton(
+            this.worldWidth * 0.5,
+            this.worldHeight * 0.5 + 130,
+            330,
+            56,
+            'MENU TITRE',
+            () => {
+                SoundEffects.stopAmbientMusic();
+                SoundEffects.stopManeuverThruster();
+                SoundEffects.stopBoostThruster();
+                this.scene.start('MainMenu', { difficultyLevel: this.difficultyLevel });
+            }
+        );
+
+        panel.add([bg, title, hint, audioBg, audioText, resumeBg, resumeText, menuBg, menuText]);
+
+        this.pauseOverlay = panel;
+        this.setNotice('Pause activee.');
+    }
+
+    closePauseMenu ()
+    {
+        if (this.pauseOverlay)
+        {
+            this.pauseOverlay.destroy(true);
+            this.pauseOverlay = null;
+        }
+
+        if (this.audioPauseOverlay)
+        {
+            this.audioPauseOverlay.destroy(true);
+            this.audioPauseOverlay = null;
+        }
+
+        this.isPaused = false;
+        this.setNotice(this.defaultNotice);
     }
 
     drawCockpitFrame ()

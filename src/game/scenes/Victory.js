@@ -23,19 +23,32 @@ export class Victory extends Scene
             strokeThickness: 8
         }).setOrigin(0.5);
 
-        this.add.text(512, 344, `Score final ${data.score ?? 0}`, {
+        const scoreLabel = data.godMode ? 'GOD' : data.bugUsed ? 'BUG' : `${data.score ?? 0}`;
+        this.add.text(512, 320, `Score final : ${scoreLabel}`, {
             fontFamily: 'Arial',
             fontSize: 32,
             color: '#d7ffe3'
         }).setOrigin(0.5);
 
-        this.add.text(512, 390, `Round termine ${data.round ?? 7}`, {
+        this.add.text(512, 390, [
+            'Bonne fête papa, tu as réussit ce jeu,',
+            'j\'esperes que tu l\'a apprécié,',
+            '',
+            'voici ta récompense, un menu Bonus rien que pour toi',
+            '(et pour le réactiver, il te suffit d\'ecrire ton',
+            'prénom dans le menu titre ;p).',
+            '',
+            'Prend la photo de cette page et envoie la moi,',
+            'ça me fera plaisir de voir ton score ^^.'
+        ].join('\n'), {
             fontFamily: 'Arial',
-            fontSize: 24,
-            color: '#c5f6d2'
+            fontSize: 20,
+            color: '#c5f6d2',
+            align: 'center',
+            lineSpacing: 6
         }).setOrigin(0.5);
 
-        this.add.text(512, 502, 'Cliquer ou appuyer sur ENTREE pour revenir au menu', {
+        this.add.text(512, 570, 'Cliquer ou appuyer sur ENTREE pour revenir au menu', {
             fontFamily: 'Arial Black',
             fontSize: 22,
             color: '#8dffb0'
@@ -50,6 +63,11 @@ export class Victory extends Scene
 
     changeScene ()
     {
+        if (typeof window !== 'undefined')
+        {
+            window.localStorage.setItem('parsec.bonus.unlocked', '1');
+        }
+
         this.scene.start('MainMenu');
     }
 }

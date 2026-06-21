@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="768" viewBox="0 0 1024 768">
+  <rect width="1024" height="768" fill="#3e3f35"/>
+  <rect x="132" y="340" width="760" height="160" rx="14" fill="#6e4f36"/>
+  <rect x="384" y="180" width="256" height="180" rx="8" fill="#efe2cc" stroke="#4f3f30" stroke-width="5"/>
+  <rect x="420" y="220" width="184" height="92" rx="6" fill="#bfc6ce" stroke="#343944" stroke-width="4"/>
+  <rect x="660" y="245" width="74" height="86" fill="#2c2e33" stroke="#b08a46" stroke-width="4"/>
+  <polygon points="370,180 390,220 350,220" fill="#ffe383"/>
+  <polygon points="655,150 675,190 635,190" fill="#ffe383"/>
+  <text x="512" y="278" text-anchor="middle" font-family="Arial Black" font-size="44" fill="#1f2732">TI-99/4A</text>
+  <text x="512" y="580" text-anchor="middle" font-family="Arial" font-size="38" fill="#f7efd8">Le Graal trouvé sur le stand</text>
+</svg>

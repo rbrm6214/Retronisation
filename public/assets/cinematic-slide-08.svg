@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="768" viewBox="0 0 1024 768">
+  <rect width="1024" height="768" fill="#0e1420"/>
+  <rect x="170" y="130" width="684" height="390" rx="14" fill="#1d2736" stroke="#6c86a5" stroke-width="5"/>
+  <rect x="204" y="164" width="616" height="322" fill="#050912"/>
+  <text x="512" y="240" text-anchor="middle" font-family="Arial Black" font-size="54" fill="#9fd9ff">UPLOAD EN COURS</text>
+  <rect x="292" y="300" width="440" height="42" rx="8" fill="#1c2736" stroke="#7dd5ff" stroke-width="4"/>
+  <rect x="296" y="304" width="432" height="34" rx="6" fill="#7cf0ff"/>
+  <rect x="760" y="380" width="24" height="24" fill="#ffd37e"/>
+  <rect x="792" y="364" width="24" height="24" fill="#e6c39e"/>
+  <rect x="824" y="396" width="24" height="24" fill="#8ec5ff"/>
+  <text x="512" y="608" text-anchor="middle" font-family="Arial" font-size="38" fill="#d7ecff">La pixelisation commence</text>
+</svg>

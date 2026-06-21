@@ -18,6 +18,8 @@ let introMusicOscillators = [];
 let introMusicGains = [];
 let introMusicActive = false;
 let introMusicLfo = null;
+let introMusicPulseTimer = null;
+let introMusicStep = 0;
 let maneuverThrusterOsc = null;
 let maneuverThrusterGain = null;
 let boostThrusterOsc = null;
@@ -636,11 +638,12 @@ export const SoundEffects = {
         this.stopAmbientMusic();
 
         introMusicActive = true;
+        introMusicStep = 0;
         const ctx = getAudioContext();
         const now = ctx.currentTime;
 
-        // Cinematic texture: darker chord with moving top voice.
-        const notes = [82.41, 123.47, 164.81, 246.94]; // E2, B2, E3, B3
+        // Cinematic bed: low drone + slowly moving upper voices.
+        const notes = [73.42, 110, 146.83]; // D2, A2, D3
 
         for (const freq of notes)
         {
@@ -648,10 +651,10 @@ export const SoundEffects = {
             const gain = ctx.createGain();
 
             osc.frequency.setValueAtTime(freq, now);
-            osc.type = freq >= 200 ? 'triangle' : 'sine';
+            osc.type = freq >= 140 ? 'triangle' : 'sine';
 
             gain.gain.setValueAtTime(0.0001, now);
-            gain.gain.exponentialRampToValueAtTime(0.06, now + 1.2);
+            gain.gain.exponentialRampToValueAtTime(0.05, now + 1.2);
 
             osc.connect(gain);
             gain.connect(ctx.destination);
@@ -663,22 +666,81 @@ export const SoundEffects = {
 
         introMusicLfo = ctx.createOscillator();
         introMusicLfo.type = 'sine';
-        introMusicLfo.frequency.value = 0.18;
+        introMusicLfo.frequency.value = 0.11;
 
         for (const osc of introMusicOscillators)
         {
             const depth = ctx.createGain();
-            depth.gain.value = 12;
+            depth.gain.value = 6;
             introMusicLfo.connect(depth);
             depth.connect(osc.frequency);
         }
 
         introMusicLfo.start(now);
+
+        // Harmonic movement and sparse arpeggio to avoid repetitive loops.
+        const progression = [
+            [73.42, 110.00, 146.83, 220.00], // Dm
+            [65.41, 98.00, 146.83, 196.00],  // C
+            [87.31, 110.00, 146.83, 220.00], // F
+            [98.00, 123.47, 164.81, 246.94]  // G
+        ];
+
+        const pulse = () => {
+            if (!introMusicActive || !canPlay('ambient'))
+            {
+                return;
+            }
+
+            const chord = progression[introMusicStep % progression.length];
+            const pickA = chord[introMusicStep % chord.length];
+            const pickB = chord[(introMusicStep + 2) % chord.length] * 2;
+            const accent = introMusicStep % 4 === 0;
+            const baseTime = ctx.currentTime;
+
+            // Update sustained bed frequencies every step.
+            if (introMusicOscillators.length >= 3)
+            {
+                introMusicOscillators[0].frequency.exponentialRampToValueAtTime(chord[0], baseTime + 0.45);
+                introMusicOscillators[1].frequency.exponentialRampToValueAtTime(chord[1], baseTime + 0.45);
+                introMusicOscillators[2].frequency.exponentialRampToValueAtTime(chord[2], baseTime + 0.45);
+            }
+
+            const pluck = (frequency, gainValue, duration, wave = 'triangle') => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+
+                osc.type = wave;
+                osc.frequency.setValueAtTime(frequency, baseTime);
+                gain.gain.setValueAtTime(gainValue, baseTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, baseTime + duration);
+
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(baseTime);
+                osc.stop(baseTime + duration + 0.02);
+            };
+
+            pluck(pickA, accent ? 0.065 : 0.045, accent ? 0.65 : 0.5, 'triangle');
+            pluck(pickB, accent ? 0.04 : 0.028, 0.35, 'sine');
+
+            introMusicStep += 1;
+        };
+
+        pulse();
+        introMusicPulseTimer = setInterval(pulse, 1200);
     },
 
     stopIntroMusic ()
     {
         introMusicActive = false;
+
+        if (introMusicPulseTimer)
+        {
+            clearInterval(introMusicPulseTimer);
+            introMusicPulseTimer = null;
+        }
+
         const ctx = getAudioContext();
         const now = ctx.currentTime;
 

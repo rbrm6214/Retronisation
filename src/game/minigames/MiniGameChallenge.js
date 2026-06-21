@@ -143,6 +143,16 @@ export class MiniGameChallenge
             const key = event.key.toUpperCase();
             this.keyState[key] = true;
 
+            if (event.code === 'ShiftLeft')
+            {
+                this.keyState.SHIFTLEFT = true;
+            }
+
+            if (event.code === 'ShiftRight')
+            {
+                this.keyState.SHIFTRIGHT = true;
+            }
+
             if (event.code === 'Space' || event.key === ' ' || event.key === 'Spacebar' || event.key === 'Space')
             {
                 this.keyState.SPACE = true;
@@ -152,6 +162,16 @@ export class MiniGameChallenge
         this.keyupHandler = (event) => {
             const key = event.key.toUpperCase();
             this.keyState[key] = false;
+
+            if (event.code === 'ShiftLeft')
+            {
+                this.keyState.SHIFTLEFT = false;
+            }
+
+            if (event.code === 'ShiftRight')
+            {
+                this.keyState.SHIFTRIGHT = false;
+            }
 
             if (event.code === 'Space' || event.key === ' ' || event.key === 'Spacebar' || event.key === 'Space')
             {
@@ -1040,17 +1060,17 @@ export class MiniGameChallenge
             return;
         }
 
-        if (this.canTrigger('ARROWLEFT'))
+        if (this.canTrigger('ARROWLEFT') || this.canTrigger('Q'))
         {
             this.tryMoveTetrisPiece(-1);
         }
 
-        if (this.canTrigger('ARROWRIGHT'))
+        if (this.canTrigger('ARROWRIGHT') || this.canTrigger('D'))
         {
             this.tryMoveTetrisPiece(1);
         }
 
-        if (this.canTrigger('ARROWUP') || this.canTrigger('ARROWDOWN'))
+        if (this.canTrigger('ARROWUP') || this.canTrigger('ARROWDOWN') || this.canTrigger('Z') || this.canTrigger('S'))
         {
             this.rotateTetrisPieceClockwise();
         }
@@ -1186,19 +1206,19 @@ export class MiniGameChallenge
     {
         const state = this.state.pacman;
 
-        if (this.canTrigger('ARROWLEFT', 0.08))
+        if (this.canTrigger('ARROWLEFT', 0.08) || this.canTrigger('Q', 0.08))
         {
             state.desiredDirection = { x: -1, y: 0 };
         }
-        else if (this.canTrigger('ARROWRIGHT', 0.08))
+        else if (this.canTrigger('ARROWRIGHT', 0.08) || this.canTrigger('D', 0.08))
         {
             state.desiredDirection = { x: 1, y: 0 };
         }
-        else if (this.canTrigger('ARROWUP', 0.08))
+        else if (this.canTrigger('ARROWUP', 0.08) || this.canTrigger('Z', 0.08))
         {
             state.desiredDirection = { x: 0, y: -1 };
         }
-        else if (this.canTrigger('ARROWDOWN', 0.08))
+        else if (this.canTrigger('ARROWDOWN', 0.08) || this.canTrigger('S', 0.08))
         {
             state.desiredDirection = { x: 0, y: 1 };
         }
@@ -1547,6 +1567,7 @@ export class MiniGameChallenge
             rightFlipper: { pivotX: FRIGHT_PIV_X, pivotY: FLIP_PIV_Y, length: FLIP_LEN, restAngle: RF_REST,  activeAngle: RF_ACTIVE, angle: RF_REST,  angularVel: 0 },
             flare: 0,
             launcher: { phase: 'idle', charge: 0, prevDown: false },
+            tilt: { strikes: 0, strikeTimer: 0, lastSpaceDown: false, active: false },
             ball: { x: laneMid, y: pfBot - 12, vx: 0, vy: 0, r: 8, trail: [] }
         };
     }
@@ -1566,11 +1587,47 @@ export class MiniGameChallenge
         state.flare = Math.max(0, state.flare - deltaSeconds * 2.2);
 
         // ── Flippers ─────────────────────────────────────────────────────────
-        const leftActive  = this.isDown('ARROWLEFT', 'Q');
-        const rightActive = this.isDown('ARROWRIGHT', 'D');
+        const leftActive  = !state.tilt.active && this.isDown('ARROWLEFT', 'Q', 'SHIFTLEFT');
+        const rightActive = !state.tilt.active && this.isDown('ARROWRIGHT', 'D', 'SHIFTRIGHT');
 
         // ── Lanceur FSM ───────────────────────────────────────────────────────
+        const launcherDown = this.isDown('ARROWDOWN', 'S');
         const spaceDown = this.isDown('SPACE');
+
+        if (!state.tilt.active)
+        {
+            if (state.tilt.strikeTimer > 0)
+            {
+                state.tilt.strikeTimer = Math.max(0, state.tilt.strikeTimer - deltaSeconds);
+                if (state.tilt.strikeTimer === 0)
+                {
+                    state.tilt.strikes = 0;
+                }
+            }
+
+            if (spaceDown && !state.tilt.lastSpaceDown)
+            {
+                state.tilt.strikes += 1;
+                state.tilt.strikeTimer = 1.35;
+
+                // Nudge: small kick that simulates hitting the cabinet.
+                if (lch.phase === 'launched')
+                {
+                    ball.vx += Phaser.Math.Between(-120, 120);
+                    ball.vy -= Phaser.Math.Between(40, 90);
+                }
+
+                if (state.tilt.strikes >= 3)
+                {
+                    state.tilt.active = true;
+                    state.tilt.strikes = 0;
+                    state.tilt.strikeTimer = 0;
+                    this.scene?.setNotice?.('TILT! Flippers bloques jusqu a la fin de la bille.');
+                }
+            }
+        }
+
+        state.tilt.lastSpaceDown = spaceDown;
 
         if (lch.phase === 'idle' || lch.phase === 'charging')
         {
@@ -1581,7 +1638,7 @@ export class MiniGameChallenge
             ball.vy = 0;
             ball.trail.length = 0;
 
-            if (spaceDown)
+            if (launcherDown)
             {
                 lch.phase  = 'charging';
                 lch.charge = Math.min(1, lch.charge + deltaSeconds * 1.6);
@@ -1592,22 +1649,22 @@ export class MiniGameChallenge
                     this.pinballLaunch(state, ball, 1);
                 }
             }
-            else if (!spaceDown && lch.prevDown && lch.charge > 0.05)
+            else if (!launcherDown && lch.prevDown && lch.charge > 0.05)
             {
                 // Relâchement: lancement avec la charge accumulée
                 this.pinballLaunch(state, ball, lch.charge);
             }
-            else if (!spaceDown)
+            else if (!launcherDown)
             {
                 lch.phase  = 'idle';
                 lch.charge = 0;
             }
 
-            lch.prevDown = spaceDown;
+            lch.prevDown = launcherDown;
             return; // Pas de physique tant que la balle est dans le lanceur
         }
 
-        lch.prevDown = spaceDown;
+        lch.prevDown = launcherDown;
 
         // ── Physique balle en jeu (sous-steps anti-tunneling) ────────────────
         const speed = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy);

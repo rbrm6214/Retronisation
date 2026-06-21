@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="768" viewBox="0 0 1024 768">
+  <defs>
+    <radialGradient id="g" cx="50%" cy="45%" r="55%">
+      <stop offset="0%" stop-color="#2f6aa3" stop-opacity="0.75"/>
+      <stop offset="100%" stop-color="#04060b" stop-opacity="1"/>
+    </radialGradient>
+  </defs>
+  <rect width="1024" height="768" fill="url(#g)"/>
+  <text x="512" y="330" text-anchor="middle" font-family="Arial Black" font-size="108" fill="#9de3ff" stroke="#0b1624" stroke-width="12">RETRONISATION</text>
+  <text x="512" y="420" text-anchor="middle" font-family="Arial" font-size="44" fill="#d8efff">Aidez Fabien à sortir de la machine</text>
+</svg>

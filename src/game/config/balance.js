@@ -1,6 +1,6 @@
 export const GAME_BALANCE = {
     difficulty: {
-        defaultLevel: 'normal',
+        defaultLevel: 'easy',
         fuelConsumptionMultiplier: {
             easy: 0.25,
             normal: 0.5,
