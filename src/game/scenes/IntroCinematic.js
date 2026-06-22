@@ -90,7 +90,15 @@ export class IntroCinematic extends Scene
 
     registerSkipControls ()
     {
-        this.pointerSkipHandler = () => this.skipCinematic();
+        this.pointerSkipHandler = () => {
+            if (!SoundEffects.isAudioUnlocked())
+            {
+                SoundEffects.consumeGestureForAudioUnlock();
+                return;
+            }
+
+            this.skipCinematic();
+        };
         this.rightArrowKey = this.input.keyboard.addKey('RIGHT');
 
         this.input.on('pointerdown', this.pointerSkipHandler);

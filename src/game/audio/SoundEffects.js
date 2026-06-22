@@ -4,6 +4,9 @@
  */
 
 let audioContext = null;
+let audioUnlocked = false;
+let audioUnlockListenersAttached = false;
+let pendingAudioStartCallbacks = [];
 let audioMuteFlags = {
     shots: false,
     thrusters: false,
@@ -59,6 +62,57 @@ function getAudioContext ()
     return audioContext;
 }
 
+function flushPendingAudioCallbacks ()
+{
+    if (!audioUnlocked || pendingAudioStartCallbacks.length === 0)
+    {
+        return;
+    }
+
+    const callbacks = pendingAudioStartCallbacks.slice();
+    pendingAudioStartCallbacks = [];
+
+    for (const callback of callbacks)
+    {
+        try
+        {
+            callback();
+        }
+        catch (error)
+        {
+            // Keep audio unlock robust even if one callback fails.
+        }
+    }
+}
+
+function detachAudioUnlockListeners ()
+{
+    if (!audioUnlockListenersAttached || typeof window === 'undefined')
+    {
+        return;
+    }
+
+    window.removeEventListener('pointerdown', SoundEffects.consumeGestureForAudioUnlock, true);
+    window.removeEventListener('touchstart', SoundEffects.consumeGestureForAudioUnlock, true);
+    window.removeEventListener('keydown', SoundEffects.consumeGestureForAudioUnlock, true);
+    window.removeEventListener('mousedown', SoundEffects.consumeGestureForAudioUnlock, true);
+    audioUnlockListenersAttached = false;
+}
+
+function attachAudioUnlockListeners ()
+{
+    if (audioUnlocked || audioUnlockListenersAttached || typeof window === 'undefined')
+    {
+        return;
+    }
+
+    window.addEventListener('pointerdown', SoundEffects.consumeGestureForAudioUnlock, true);
+    window.addEventListener('touchstart', SoundEffects.consumeGestureForAudioUnlock, true);
+    window.addEventListener('keydown', SoundEffects.consumeGestureForAudioUnlock, true);
+    window.addEventListener('mousedown', SoundEffects.consumeGestureForAudioUnlock, true);
+    audioUnlockListenersAttached = true;
+}
+
 function playTone (frequency, durationMs, volumeStart = 0.3, volumeEnd = 0)
 {
     const ctx = getAudioContext();
@@ -110,6 +164,75 @@ function playNoise (durationMs, volumeStart = 0.2, volumeEnd = 0)
 }
 
 export const SoundEffects = {
+    isAudioUnlocked ()
+    {
+        return audioUnlocked;
+    },
+
+    runWhenAudioUnlocked (callback)
+    {
+        if (typeof callback !== 'function')
+        {
+            return;
+        }
+
+        if (audioUnlocked)
+        {
+            callback();
+            return;
+        }
+
+        pendingAudioStartCallbacks.push(callback);
+        attachAudioUnlockListeners();
+    },
+
+    consumeGestureForAudioUnlock ()
+    {
+        if (audioUnlocked)
+        {
+            return false;
+        }
+
+        let ctx = null;
+
+        try
+        {
+            ctx = getAudioContext();
+        }
+        catch (error)
+        {
+            return true;
+        }
+
+        const completeUnlock = () => {
+            audioUnlocked = true;
+            detachAudioUnlockListeners();
+            flushPendingAudioCallbacks();
+        };
+
+        if (ctx.state === 'running')
+        {
+            completeUnlock();
+            return true;
+        }
+
+        if (typeof ctx.resume === 'function')
+        {
+            ctx.resume()
+                .then(() => {
+                    if (ctx.state === 'running')
+                    {
+                        completeUnlock();
+                    }
+                })
+                .catch(() => {
+                    // Ignore: browser still blocked, next gesture will retry.
+                });
+        }
+
+        return true;
+    },
+
     setSoundMode (mode)
     {
         // Backward-compatible helper used by Game scene menu.
@@ -627,6 +750,12 @@ export const SoundEffects = {
     {
         if (!canPlay('ambient'))
         {
+            return;
+        }
+
+        if (!audioUnlocked)
+        {
+            this.runWhenAudioUnlocked(() => this.startIntroMusic());
             return;
         }
 
