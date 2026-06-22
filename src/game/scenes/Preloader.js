@@ -1,10 +1,5 @@
 import { Scene } from 'phaser';
 
-const BONUS_GAME_OVER_URL = `${import.meta.env.BASE_URL}dist/bonus/GameOver.png`;
-const BONUS_JAQUETTE_RETRONISATION_URL = `${import.meta.env.BASE_URL}dist/bonus/JaquetteRetronisation.png`;
-const BONUS_ZE_NEXT_KEEN_URL = `${import.meta.env.BASE_URL}dist/bonus/ZeNextKeen.png`;
-const BONUS_ZE_NEXT_PREHISTORIK_URL = `${import.meta.env.BASE_URL}dist/bonus/ZeNextPrehistorik.png`;
-
 export class Preloader extends Scene
 {
     constructor ()
@@ -58,13 +53,13 @@ export class Preloader extends Scene
         this.load.image('bonus-fabien-hangar', '../dist/bonus/FabienAuHangar.png');
         this.load.image('bonus-fabien-hangar-retro', '../dist/bonus/FabienAuHangarRetro.png');
         this.load.image('bonus-fabien-pilote', '../dist/bonus/FabienPilote.png');
-        this.load.image('bonus-game-over', BONUS_GAME_OVER_URL);
+        this.load.image('bonus-game-over', '../dist/bonus/GameOver.png');
         this.load.image('bonus-in-the-screen', '../dist/bonus/InTheScreen.png');
-        this.load.image('bonus-jaquette-retronisation', BONUS_JAQUETTE_RETRONISATION_URL);
+        this.load.image('bonus-jaquette-retronisation', '../dist/bonus/JaquetteRetronisation.png');
         this.load.image('bonus-pixelise', '../dist/bonus/Pixelisé.png');
         this.load.image('bonus-sur-son-joujou', '../dist/bonus/SurSonJoujou.png');
-        this.load.image('bonus-ze-next-keen', BONUS_ZE_NEXT_KEEN_URL);
-        this.load.image('bonus-ze-next-prehistorik', BONUS_ZE_NEXT_PREHISTORIK_URL);
+        this.load.image('bonus-ze-next-keen', '../dist/bonus/ZeNextKeen.png');
+        this.load.image('bonus-ze-next-prehistorik', '../dist/bonus/ZeNextPrehistorik.png');
     }
 
     create ()
