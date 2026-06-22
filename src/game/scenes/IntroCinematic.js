@@ -752,7 +752,7 @@ export class IntroCinematic extends Scene
             strokeThickness: 12,
             align: 'center'
         }).setOrigin(0.5);
-        const subtitle = this.add.text(512, 302, 'Aidez Fabien à sortir de la machine', {
+        const subtitle = this.add.text(512, 302, 'Aides Fabien à sortir de la machine', {
             fontFamily: 'Arial',
             fontSize: 32,
             color: '#d8efff'

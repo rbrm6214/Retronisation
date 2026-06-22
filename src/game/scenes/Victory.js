@@ -24,7 +24,7 @@ export class Victory extends Scene
         }).setOrigin(0.5);
 
         const scoreLabel = data.godMode ? 'GOD' : data.bugUsed ? 'BUG' : `${data.score ?? 0}`;
-        this.add.text(512, 320, `Score final : ${scoreLabel}`, {
+        this.add.text(512, 327, `Score final : ${scoreLabel}`, {
             fontFamily: 'Arial',
             fontSize: 32,
             color: '#d7ffe3'

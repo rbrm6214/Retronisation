@@ -147,6 +147,7 @@ export class Game extends Scene
         };
 
         this.nearMissActive = false;
+        this.nearMissScoreActive = false;
         this.lastNearMissSoundTime = 0;
         this.lastSpeedChangeTime = 0;
         this.lastVerticalMovementTime = 0;
@@ -378,6 +379,22 @@ export class Game extends Scene
         return this.roundIndex === GAME_BALANCE.progression.rounds
             ? GAME_BALANCE.progression.finalRoundWaves
             : GAME_BALANCE.progression.wavesPerRound;
+    }
+
+    get currentSceneDistanceTarget ()
+    {
+        const baseTarget = Game.SCENE_DISTANCE_TARGET;
+        const isFinalRoundSequence = this.roundIndex >= GAME_BALANCE.progression.rounds && this.waveInRound >= this.wavesInCurrentRound;
+
+        if (!isFinalRoundSequence)
+        {
+            return baseTarget;
+        }
+
+        const multiplierTable = GAME_BALANCE.progression.finalRoundDistanceMultiplierByDifficulty ?? {};
+        const multiplier = multiplierTable[this.difficultyLevel] ?? 1;
+
+        return baseTarget * multiplier;
     }
 
     get inTunnel ()
@@ -1379,7 +1396,7 @@ export class Game extends Scene
         // Only spawn in pure 'wave' phase, not in 'wave-exit'
         if (this.gamePhase === 'wave' && !this.inTunnel)
         {
-            const shouldKeepSpawning = this.sceneDistance < Game.SCENE_DISTANCE_TARGET;
+            const shouldKeepSpawning = this.sceneDistance < this.currentSceneDistanceTarget;
             this.enemySpawnTimer -= deltaSeconds;
 
             if (this.enemySpawnTimer <= 0 && shouldKeepSpawning)
@@ -2783,7 +2800,7 @@ export class Game extends Scene
         };
 
         this.cameras.main.setBackgroundColor(cfg.backgroundColor);
-        this.setNotice(`CAUTION: ASTEROID BELT — tenez 5000 m!`);
+        this.setNotice(`CAUTION: ASTEROID BELT — tenez ${this.currentSceneDistanceTarget} m!`);
     }
 
     updateAsteroidBelt (deltaSeconds)
@@ -2924,12 +2941,26 @@ export class Game extends Scene
         this.configureWavePlan();
         this.maybeScheduleSceneTunnel();
         this.enemySpawnTimer = Math.min(...this.waveSpawnPlan.map((entry) => entry.config.spawnInterval));
-        this.setNotice(`Round ${this.roundIndex} - Manche ${this.waveInRound}: ${this.currentWaveLabel}.`);
+
+        if (this.roundIndex >= GAME_BALANCE.progression.rounds && this.waveInRound === 1)
+        {
+            const multiplierTable = GAME_BALANCE.progression.finalRoundDistanceMultiplierByDifficulty ?? {};
+            const multiplier = multiplierTable[this.difficultyLevel] ?? 1;
+            const extendedDistance = Game.SCENE_DISTANCE_TARGET * multiplier;
+            this.setNotice(
+                `VAGUE FINALE LONGUE! Round ${this.roundIndex} - Manche ${this.waveInRound}: ${this.currentWaveLabel}. ` +
+                `Tenez ${extendedDistance} m pour finir!`
+            );
+        }
+        else
+        {
+            this.setNotice(`Round ${this.roundIndex} - Manche ${this.waveInRound}: ${this.currentWaveLabel}.`);
+        }
     }
 
     updateSceneProgression ()
     {
-        const sceneDistanceTarget = Game.SCENE_DISTANCE_TARGET;
+        const sceneDistanceTarget = this.currentSceneDistanceTarget;
 
         if (this.gamePhase === 'wave' && this.sceneDistance >= sceneDistanceTarget && !this.waveSummaryReady)
         {
@@ -3358,16 +3389,20 @@ export class Game extends Scene
     updateBoostCharge (deltaSeconds)
     {
         const cfg = GAME_BALANCE.boost;
+        const playerPolygon = this.getPlayerCollisionPolygon();
         let nearMissDetected = false;
+        let nearMissEntityDetected = false;
+        let closestEntityNearMissDistance = Number.POSITIVE_INFINITY;
 
         for (const enemy of this.activeEnemies)
         {
-            const distance = this.getDistanceBetweenPolygons(this.getPlayerCollisionPolygon(), this.getObjectCollisionPolygon(enemy));
+            const distance = this.getDistanceBetweenPolygons(playerPolygon, this.getObjectCollisionPolygon(enemy));
 
             if (distance < cfg.nearMissOuterMargin && distance > cfg.nearMissInnerMargin)
             {
                 nearMissDetected = true;
-                break;
+                nearMissEntityDetected = true;
+                closestEntityNearMissDistance = Math.min(closestEntityNearMissDistance, distance);
             }
         }
 
@@ -3375,7 +3410,7 @@ export class Game extends Scene
         {
             for (const shot of this.enemyShotGroup.getChildren())
             {
-                const distance = this.getDistanceBetweenPolygons(this.getPlayerCollisionPolygon(), this.getObjectCollisionPolygon(shot));
+                const distance = this.getDistanceBetweenPolygons(playerPolygon, this.getObjectCollisionPolygon(shot));
 
                 if (distance < cfg.nearMissOuterMargin && distance > cfg.nearMissInnerMargin)
                 {
@@ -3390,13 +3425,15 @@ export class Game extends Scene
             for (const ast of this.activeAsteroids)
             {
                 const distance = this.getDistanceBetweenPolygons(
-                    this.getPlayerCollisionPolygon(),
+                    playerPolygon,
                     ast.getCollisionPolygon()
                 );
 
                 if (distance < cfg.nearMissOuterMargin && distance > cfg.nearMissInnerMargin)
                 {
                     nearMissDetected = true;
+                    nearMissEntityDetected = true;
+                    closestEntityNearMissDistance = Math.min(closestEntityNearMissDistance, distance);
                 }
             }
         }
@@ -3412,7 +3449,28 @@ export class Game extends Scene
             this.playerState.boostCharge = Math.min(100, this.playerState.boostCharge + (cfg.nearMissChargePerSecond * deltaSeconds));
         }
 
+        if (nearMissEntityDetected && !this.nearMissScoreActive)
+        {
+            this.addScore(this.getNearMissScorePoints(closestEntityNearMissDistance, cfg));
+        }
+
+        this.nearMissScoreActive = nearMissEntityDetected;
         this.nearMissActive = nearMissDetected;
+    }
+
+    getNearMissScorePoints (distance, cfg = GAME_BALANCE.boost)
+    {
+        const inner = cfg.nearMissInnerMargin;
+        const outer = cfg.nearMissOuterMargin;
+
+        if (!Number.isFinite(distance) || outer <= inner)
+        {
+            return 1;
+        }
+
+        const normalized = Phaser.Math.Clamp((outer - distance) / (outer - inner), 0, 1);
+
+        return Phaser.Math.Clamp(1 + Math.round(normalized * 14), 1, 15);
     }
 
     areMovingCirclesColliding (fromA, toA, fromB, toB, combinedRadius)

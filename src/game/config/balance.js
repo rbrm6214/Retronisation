@@ -77,7 +77,12 @@ export const GAME_BALANCE = {
         rounds: 7,
         wavesPerRound: 7,
         finalRoundWaves: 1,
-        waveExitTimeout: 8
+        waveExitTimeout: 8,
+        finalRoundDistanceMultiplierByDifficulty: {
+            easy: 4,
+            normal: 5,
+            hard: 6
+        }
     },
     scoring: {
         waveClear: 200,
@@ -85,9 +90,9 @@ export const GAME_BALANCE = {
         fuelTunnelPenalty: -100,
         roundClear: 1000,
         chronoBonuses: [
-            { label: 'Lièvre', thresholdSeconds: 150, points: 1000 },
-            { label: 'Cheval', thresholdSeconds: 120, points: 2000 },
-            { label: 'Guépard', thresholdSeconds: 90, points: 3000 }
+            { label: 'Lièvre', thresholdSeconds: 155, points: 1000 },
+            { label: 'Cheval', thresholdSeconds: 130, points: 2000 },
+            { label: 'Guépard', thresholdSeconds: 105, points: 3000 }
         ],
         survivantBonus: 1000,
         nettoyeurBonus: 1750,

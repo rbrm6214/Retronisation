@@ -3,6 +3,11 @@ import { SoundEffects } from '../audio/SoundEffects';
 import { GAME_BALANCE } from '../config/balance';
 import { Scene } from 'phaser';
 
+const BONUS_GAME_OVER_URL = new URL('../../../dist/dist/bonus/GameOver.png', import.meta.url).href;
+const BONUS_JAQUETTE_RETRONISATION_URL = new URL('../../../dist/dist/bonus/JaquetteRetronisation.png', import.meta.url).href;
+const BONUS_ZE_NEXT_KEEN_URL = new URL('../../../dist/dist/bonus/ZeNextKeen.png', import.meta.url).href;
+const BONUS_ZE_NEXT_PREHISTORIK_URL = new URL('../../../dist/dist/bonus/ZeNextPrehistorik.png', import.meta.url).href;
+
 export class MainMenu extends Scene
 {
     constructor ()
@@ -73,7 +78,7 @@ export class MainMenu extends Scene
             strokeThickness: 12,
             align: 'center'
         }).setOrigin(0.5);
-        const subtitle = this.add.text(512, 252, 'Aides Fabien a sortir de la machine', {
+        const subtitle = this.add.text(512, 252, 'Aides Fabien à sortir de la machine', {
             fontFamily: 'Arial',
             fontSize: 32,
             color: '#d8efff'
@@ -322,7 +327,11 @@ export class MainMenu extends Scene
             'BOOST ET JAUGE BOOST',
             '- Boost: si jauge pleine + fuel suffisant, vitesse au-dessus de la limite reacteur.',
             '- Plus la vitesse est elevee, plus les vagues defilent vite.',
-            '- Jauge boost: se recharge en frolant ennemis/asteroids ou via un rail de lancement.'
+            '- Jauge boost: se recharge en frolant ennemis/asteroids ou via un rail de lancement.',
+            '',
+            'CONSEIL DE SURVIE',
+            '- Amélioration manuelle: A chaque round, il est possible de gagner un point d\'amélioration supplémentaire en jouant à un mini-jeu (aléatoire parmis 5) et en remportant l\'objectif!',
+            '- Pour les plus joueurs, il est aussi possible de gagner un point d\'amélioration bonus si vous ne faites pas d\'amélioration sur votre vaisseau à la manche précédente.' 
         ].join('\n');
 
         const scorePage1 = [
@@ -581,9 +590,13 @@ export class MainMenu extends Scene
             { name: 'FabienAuHangar', type: 'image', url: b + 'dist/bonus/FabienAuHangar.png' },
             { name: 'FabienAuHangarRetro', type: 'image', url: b + 'dist/bonus/FabienAuHangarRetro.png' },
             { name: 'FabienPilote', type: 'image', url: b + 'dist/bonus/FabienPilote.png' },
+            { name: 'GameOver', type: 'image', url: BONUS_GAME_OVER_URL },
             { name: 'InTheScreen', type: 'image', url: b + 'dist/bonus/InTheScreen.png' },
+            { name: 'JaquetteRetronisation', type: 'image', url: BONUS_JAQUETTE_RETRONISATION_URL },
             { name: 'Pixelisé', type: 'image', url: b + 'dist/bonus/Pixelisé.png' },
-            { name: 'SurSonJoujou', type: 'image', url: b + 'dist/bonus/SurSonJoujou.png' }
+            { name: 'SurSonJoujou', type: 'image', url: b + 'dist/bonus/SurSonJoujou.png' },
+            { name: 'ZeNextKeen', type: 'image', url: BONUS_ZE_NEXT_KEEN_URL },
+            { name: 'ZeNextPrehistorik', type: 'image', url: BONUS_ZE_NEXT_PREHISTORIK_URL }
         ];
 
         const manifest = this.registry.get('bonusMediaManifest');

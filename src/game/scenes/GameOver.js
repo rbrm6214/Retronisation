@@ -15,6 +15,14 @@ export class GameOver extends Scene
         this.add.image(512, 384, 'background').setAlpha(0.12);
         this.add.rectangle(512, 384, 680, 380, 0x120c12, 0.9).setStrokeStyle(2, 0xff8d8d, 0.4);
 
+        if (this.textures.exists('bonus-game-over'))
+        {
+            this.add.image(512, 384, 'bonus-game-over')
+                .setDisplaySize(520, 280)
+                .setAlpha(0.35)
+                .setDepth(10);
+        }
+
         this.add.text(512, 268, 'GAME OVER', {
             fontFamily: 'Arial Black', fontSize: 64, color: '#ffffff',
             stroke: '#000000', strokeThickness: 8,
