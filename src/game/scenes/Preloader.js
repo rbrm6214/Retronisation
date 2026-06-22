@@ -71,13 +71,13 @@ export class Preloader extends Scene
             { name: 'FabienAuHangar', type: 'image', url: b + 'dist/bonus/FabienAuHangar.png' },
             { name: 'FabienAuHangarRetro', type: 'image', url: b + 'dist/bonus/FabienAuHangarRetro.png' },
             { name: 'FabienPilote', type: 'image', url: b + 'dist/bonus/FabienPilote.png' },
-            { name: 'GameOver', type: 'image', url: BONUS_GAME_OVER_URL },
+            { name: 'GameOver', type: 'image', url: b + 'dist/bonus/GameOver.png' },
             { name: 'InTheScreen', type: 'image', url: b + 'dist/bonus/InTheScreen.png' },
-            { name: 'JaquetteRetronisation', type: 'image', url: BONUS_JAQUETTE_RETRONISATION_URL },
+            { name: 'JaquetteRetronisation', type: 'image', url: b + 'dist/bonus/JaquetteRetronisation.png' },
             { name: 'Pixelisé', type: 'image', url: b + 'dist/bonus/Pixelisé.png' },
             { name: 'SurSonJoujou', type: 'image', url: b + 'dist/bonus/SurSonJoujou.png' },
-            { name: 'ZeNextKeen', type: 'image', url: BONUS_ZE_NEXT_KEEN_URL },
-            { name: 'ZeNextPrehistorik', type: 'image', url: BONUS_ZE_NEXT_PREHISTORIK_URL }
+            { name: 'ZeNextKeen', type: 'image', url: b + 'dist/bonus/ZeNextKeen.png' },
+            { name: 'ZeNextPrehistorik', type: 'image', url: b + 'dist/bonus/ZeNextPrehistorik.png' }
         ]);
 
         this.scene.start('IntroCinematic');
