@@ -3,10 +3,10 @@ import { SoundEffects } from '../audio/SoundEffects';
 import { GAME_BALANCE } from '../config/balance';
 import { Scene } from 'phaser';
 
-const BONUS_GAME_OVER_URL = new URL('../../../dist/dist/bonus/GameOver.png', import.meta.url).href;
-const BONUS_JAQUETTE_RETRONISATION_URL = new URL('../../../dist/dist/bonus/JaquetteRetronisation.png', import.meta.url).href;
-const BONUS_ZE_NEXT_KEEN_URL = new URL('../../../dist/dist/bonus/ZeNextKeen.png', import.meta.url).href;
-const BONUS_ZE_NEXT_PREHISTORIK_URL = new URL('../../../dist/dist/bonus/ZeNextPrehistorik.png', import.meta.url).href;
+const BONUS_GAME_OVER_URL = `${import.meta.env.BASE_URL}dist/bonus/GameOver.png`;
+const BONUS_JAQUETTE_RETRONISATION_URL = `${import.meta.env.BASE_URL}dist/bonus/JaquetteRetronisation.png`;
+const BONUS_ZE_NEXT_KEEN_URL = `${import.meta.env.BASE_URL}dist/bonus/ZeNextKeen.png`;
+const BONUS_ZE_NEXT_PREHISTORIK_URL = `${import.meta.env.BASE_URL}dist/bonus/ZeNextPrehistorik.png`;
 
 export class MainMenu extends Scene
 {
