@@ -13,7 +13,9 @@ export class MiniGamesMenu extends Scene
     create (data = {})
     {
         const persistedDifficulty = typeof window !== 'undefined' ? window.localStorage.getItem('parsec.difficulty') : null;
-        this.selectedDifficulty = data.difficultyLevel || persistedDifficulty || GAME_BALANCE.difficulty.defaultLevel;
+        const levels = GAME_BALANCE.difficulty.levels ?? ['easy', 'normal', 'hard'];
+        const requestedDifficulty = data.difficultyLevel || persistedDifficulty || GAME_BALANCE.difficulty.defaultLevel;
+        this.selectedDifficulty = levels.includes(requestedDifficulty) ? requestedDifficulty : GAME_BALANCE.difficulty.defaultLevel;
         this.selectedRound = 1;
         this.activeChallenge = null;
         this.pendingGameId = null;
@@ -191,7 +193,7 @@ export class MiniGamesMenu extends Scene
 
     cycleDifficulty (direction)
     {
-        const levels = ['easy', 'normal', 'hard'];
+        const levels = GAME_BALANCE.difficulty.levels ?? ['easy', 'normal', 'hard'];
         const currentIndex = levels.indexOf(this.selectedDifficulty);
         let nextIndex = currentIndex + direction;
 
@@ -448,7 +450,7 @@ export class MiniGamesMenu extends Scene
         );
         const timeSeconds = 300;
         const attempts = this.selectedDifficulty === 'normal' ? 2 : 1;
-        const lives = this.selectedDifficulty === 'easy' ? 2 : 1;
+        const lives = ['newbe', 'easy'].includes(this.selectedDifficulty) ? 2 : 1;
         const controls = this.getMiniGameControlLines(game.id).join('\n');
 
         this.pendingGameId = game.id;

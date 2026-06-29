@@ -414,7 +414,7 @@ export class MiniGameChallenge
 
     getInitialLivesForDifficulty ()
     {
-        return this.difficultyLevel === 'easy' ? 2 : 1;
+        return ['newbe', 'easy'].includes(this.difficultyLevel) ? 2 : 1;
     }
 
     resetForNextAttempt ()
@@ -808,7 +808,7 @@ export class MiniGameChallenge
     {
         const cols = 10;
         const rows = 16;
-        const isEasy = this.difficultyLevel === 'easy';
+        const isEasy = ['newbe', 'easy'].includes(this.difficultyLevel);
         const isHard = this.difficultyLevel === 'hard';
         const dropInterval = isEasy ? 0.50 : (isHard ? 0.32 : 0.42);
         const canShowNextPiece = this.difficultyLevel !== 'hard';
@@ -1154,7 +1154,7 @@ export class MiniGameChallenge
         powerPellets.forEach((key) => pellets.delete(key));
 
         // Nombre d'ennemis selon la difficulte: 2 facile, 3 moyen/normal, 4 difficile
-        const ghostCount = this.difficultyLevel === 'easy'
+        const ghostCount = ['newbe', 'easy'].includes(this.difficultyLevel)
             ? 2
             : (this.difficultyLevel === 'hard' ? 4 : 3);
         const ghosts = [];

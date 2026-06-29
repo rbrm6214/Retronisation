@@ -22,7 +22,10 @@ export class Game extends Scene
     {
         const persistedDifficulty = typeof window !== 'undefined' ? window.localStorage.getItem('parsec.difficulty') : null;
         const requestedDifficulty = data.difficultyLevel || persistedDifficulty || GAME_BALANCE.difficulty.defaultLevel;
-        const validLevels = Object.keys(GAME_BALANCE.difficulty.fuelConsumptionMultiplier);
+        const validLevels = GAME_BALANCE.difficulty.levels ?? Object.keys(GAME_BALANCE.difficulty.fuelConsumptionMultiplier);
+        const startingHullUpgradeLevel = GAME_BALANCE.difficulty.startingHullUpgradeLevel?.[requestedDifficulty]
+            ?? GAME_BALANCE.upgrades.hull.baseLevel;
+        const startingHull = Math.max(GAME_BALANCE.player.hull, startingHullUpgradeLevel);
 
         this.difficultyLevel = validLevels.includes(requestedDifficulty) ? requestedDifficulty : GAME_BALANCE.difficulty.defaultLevel;
 
@@ -122,7 +125,7 @@ export class Game extends Scene
             maxSpeed: GAME_BALANCE.player.maxSpeed,
             verticalVelocity: 0,
             fuel: GAME_BALANCE.player.startFuel,
-            hull: GAME_BALANCE.player.hull,
+            hull: startingHull,
             invulnerability: 0,
             bombs: GAME_BALANCE.bombs.initialCount,
             boostCharge: GAME_BALANCE.boost.initialChargeByDifficulty[this.difficultyLevel] ?? 0,
@@ -132,7 +135,7 @@ export class Game extends Scene
             upgrades: {
                 cannon: GAME_BALANCE.upgrades.cannon.baseLevel,
                 reactor: GAME_BALANCE.upgrades.reactor.baseLevel,
-                hull: GAME_BALANCE.upgrades.hull.baseLevel,
+                hull: startingHullUpgradeLevel,
                 shield: GAME_BALANCE.upgrades.shield.baseLevel,
                 cooling: GAME_BALANCE.upgrades.cooling.baseLevel,
                 reservoir: GAME_BALANCE.upgrades.reservoir.baseLevel,
@@ -383,7 +386,9 @@ export class Game extends Scene
 
     get currentSceneDistanceTarget ()
     {
-        const baseTarget = Game.SCENE_DISTANCE_TARGET;
+        const baseMultiplierTable = GAME_BALANCE.progression.sceneDistanceMultiplierByDifficulty ?? {};
+        const baseMultiplier = baseMultiplierTable[this.difficultyLevel] ?? 1;
+        const baseTarget = Game.SCENE_DISTANCE_TARGET * baseMultiplier;
         const isFinalRoundSequence = this.roundIndex >= GAME_BALANCE.progression.rounds && this.waveInRound >= this.wavesInCurrentRound;
 
         if (!isFinalRoundSequence)
@@ -432,6 +437,13 @@ export class Game extends Scene
     get fuelConsumptionMultiplier ()
     {
         const table = GAME_BALANCE.difficulty.fuelConsumptionMultiplier;
+
+        return table[this.difficultyLevel] ?? table.normal;
+    }
+
+    get shotFuelConsumptionMultiplier ()
+    {
+        const table = GAME_BALANCE.difficulty.shotFuelConsumptionMultiplier ?? GAME_BALANCE.difficulty.fuelConsumptionMultiplier;
 
         return table[this.difficultyLevel] ?? table.normal;
     }
@@ -848,7 +860,7 @@ export class Game extends Scene
         {
             this.lastShotAt = time;
             const cannonLevel = this.playerState.upgrades.cannon;
-            const baseFuelCost = GAME_BALANCE.weapons.fuelPerShot * this.fuelConsumptionMultiplier;
+            const baseFuelCost = GAME_BALANCE.weapons.fuelPerShot * this.shotFuelConsumptionMultiplier;
             const divisor = this.getConsumptionDivisor();
             const fuelCost = (baseFuelCost * cannonLevel) / divisor;
             
@@ -2420,7 +2432,7 @@ export class Game extends Scene
         );
         const timeSeconds = 300;
         const attempts = this.difficultyLevel === 'normal' ? 2 : 1;
-        const lives = this.difficultyLevel === 'easy' ? 2 : 1;
+        const lives = ['newbe', 'easy'].includes(this.difficultyLevel) ? 2 : 1;
         const controls = this.getManualMiniGameControlLines(this.activeManualMiniGameDef.id).join('\n');
 
         this.manualMiniGamePreviewTitle.setText(this.activeManualMiniGameDef.label.toUpperCase());
@@ -2944,9 +2956,11 @@ export class Game extends Scene
 
         if (this.roundIndex >= GAME_BALANCE.progression.rounds && this.waveInRound === 1)
         {
+            const baseMultiplierTable = GAME_BALANCE.progression.sceneDistanceMultiplierByDifficulty ?? {};
+            const baseMultiplier = baseMultiplierTable[this.difficultyLevel] ?? 1;
             const multiplierTable = GAME_BALANCE.progression.finalRoundDistanceMultiplierByDifficulty ?? {};
             const multiplier = multiplierTable[this.difficultyLevel] ?? 1;
-            const extendedDistance = Game.SCENE_DISTANCE_TARGET * multiplier;
+            const extendedDistance = Game.SCENE_DISTANCE_TARGET * baseMultiplier * multiplier;
             this.setNotice(
                 `VAGUE FINALE LONGUE! Round ${this.roundIndex} - Manche ${this.waveInRound}: ${this.currentWaveLabel}. ` +
                 `Tenez ${extendedDistance} m pour finir!`

@@ -1,14 +1,29 @@
 export const GAME_BALANCE = {
     difficulty: {
+        levels: ['newbe', 'easy', 'normal', 'hard'],
         defaultLevel: 'easy',
         fuelConsumptionMultiplier: {
+            newbe: 0.125,
+            easy: 0.25,
+            normal: 0.5,
+            hard: 1
+        },
+        shotFuelConsumptionMultiplier: {
+            newbe: 0.05,
             easy: 0.25,
             normal: 0.5,
             hard: 1
         },
         scoreMultiplier: {
+            newbe: 1,
             easy: 1,
             normal: 2,
+            hard: 3
+        },
+        startingHullUpgradeLevel: {
+            newbe: 5,
+            easy: 3,
+            normal: 3,
             hard: 3
         }
     },
@@ -78,7 +93,14 @@ export const GAME_BALANCE = {
         wavesPerRound: 7,
         finalRoundWaves: 1,
         waveExitTimeout: 8,
+        sceneDistanceMultiplierByDifficulty: {
+            newbe: 0.5,
+            easy: 1,
+            normal: 1,
+            hard: 1
+        },
         finalRoundDistanceMultiplierByDifficulty: {
+            newbe: 4,
             easy: 4,
             normal: 5,
             hard: 6
@@ -116,6 +138,7 @@ export const GAME_BALANCE = {
     },
     repair: {
         difficultyMultiplier: {
+            newbe: 1,
             easy: 1,
             normal: 2,
             hard: 3
@@ -131,11 +154,13 @@ export const GAME_BALANCE = {
     },
     boost: {
         initialChargeByDifficulty: {
+            newbe: 50,
             easy: 50,
             normal: 25,
             hard: 0
         },
         fuelCostByDifficulty: {
+            newbe: 7,
             easy: 7,
             normal: 10,
             hard: 16
@@ -226,6 +251,7 @@ export const GAME_BALANCE = {
     miniGames: {
         baseTargetScore: 1000,
         durationSecondsByDifficulty: {
+            newbe: 55,
             easy: 55,
             normal: 50,
             hard: 45
@@ -233,11 +259,13 @@ export const GAME_BALANCE = {
         roundDurationBonusSeconds: 5,
         maxRoundDurationBonusSeconds: 35,
         scoreGainMultiplierByDifficulty: {
+            newbe: 1.08,
             easy: 1.08,
             normal: 1,
             hard: 0.92
         },
         gameplaySpeedMultiplierByDifficulty: {
+            newbe: 0.92,
             easy: 0.92,
             normal: 1,
             hard: 1.12

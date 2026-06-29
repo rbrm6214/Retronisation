@@ -26,7 +26,7 @@ export class MainMenu extends Scene
     create (data = {})
     {
         const persisted = typeof window !== 'undefined' ? window.localStorage.getItem('parsec.difficulty') : null;
-        const allowedDifficulties = ['easy', 'normal', 'hard'];
+        const allowedDifficulties = GAME_BALANCE.difficulty.levels ?? ['easy', 'normal', 'hard'];
         const validPersisted = allowedDifficulties.includes(persisted) ? persisted : null;
         this.selectedDifficulty = data.difficultyLevel || validPersisted || GAME_BALANCE.difficulty.defaultLevel;
         this.secretCode = 'VINCENT';
@@ -1016,7 +1016,7 @@ export class MainMenu extends Scene
 
     cycleDifficulty ()
     {
-        const levels = ['easy', 'normal', 'hard'];
+        const levels = GAME_BALANCE.difficulty.levels ?? ['easy', 'normal', 'hard'];
         const currentIndex = levels.indexOf(this.selectedDifficulty);
         const nextIndex = (currentIndex + 1) % levels.length;
 
