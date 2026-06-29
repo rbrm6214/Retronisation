@@ -414,7 +414,7 @@ export class MiniGameChallenge
 
     getInitialLivesForDifficulty ()
     {
-        return ['newbe', 'easy'].includes(this.difficultyLevel) ? 2 : 1;
+        return ['newbie', 'easy'].includes(this.difficultyLevel) ? 2 : 1;
     }
 
     resetForNextAttempt ()

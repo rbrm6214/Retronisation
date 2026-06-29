@@ -2432,7 +2432,7 @@ export class Game extends Scene
         );
         const timeSeconds = 300;
         const attempts = this.difficultyLevel === 'normal' ? 2 : 1;
-        const lives = ['newbe', 'easy'].includes(this.difficultyLevel) ? 2 : 1;
+        const lives = ['newbie', 'easy'].includes(this.difficultyLevel) ? 2 : 1;
         const controls = this.getManualMiniGameControlLines(this.activeManualMiniGameDef.id).join('\n');
 
         this.manualMiniGamePreviewTitle.setText(this.activeManualMiniGameDef.label.toUpperCase());

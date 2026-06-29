@@ -450,7 +450,7 @@ export class MiniGamesMenu extends Scene
         );
         const timeSeconds = 300;
         const attempts = this.selectedDifficulty === 'normal' ? 2 : 1;
-        const lives = ['newbe', 'easy'].includes(this.selectedDifficulty) ? 2 : 1;
+        const lives = ['newbie', 'easy'].includes(this.selectedDifficulty) ? 2 : 1;
         const controls = this.getMiniGameControlLines(game.id).join('\n');
 
         this.pendingGameId = game.id;

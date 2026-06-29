@@ -20,15 +20,21 @@ export class MainMenu extends Scene
         this.bonusMediaOverlay = null;
         this.bonusMediaLabel = null;
         this.startVideoOverlay = null;
+        this.startVideoSkipKeyHandler = null;
+        this.startVideoSkipPointerHandler = null;
         this.isStartTransitionRunning = false;
+        this.optionsDifficultyLabel = null;
     }
 
     create (data = {})
     {
         const persisted = typeof window !== 'undefined' ? window.localStorage.getItem('parsec.difficulty') : null;
-        const allowedDifficulties = GAME_BALANCE.difficulty.levels ?? ['easy', 'normal', 'hard'];
-        const validPersisted = allowedDifficulties.includes(persisted) ? persisted : null;
-        this.selectedDifficulty = data.difficultyLevel || validPersisted || GAME_BALANCE.difficulty.defaultLevel;
+        this.newbieCode = 'NEWBIE';
+        this.newbieProgress = 0;
+        this.newbieUnlocked = data.difficultyLevel === 'newbie';
+        const allowedDifficulties = this.getAvailableDifficultyLevels();
+        const requestedDifficulty = data.difficultyLevel || persisted || GAME_BALANCE.difficulty.defaultLevel;
+        this.selectedDifficulty = allowedDifficulties.includes(requestedDifficulty) ? requestedDifficulty : GAME_BALANCE.difficulty.defaultLevel;
         this.secretCode = 'VINCENT';
         this.secretProgress = 0;
         this.bonusCode = 'FABIEN';
@@ -204,8 +210,16 @@ export class MainMenu extends Scene
 
     handleMenuKey (event)
     {
+        this.updateNewbieSequence(event.key);
         this.updateVincentSequence(event.key);
         this.updateFabienSequence(event.key);
+    }
+
+    getAvailableDifficultyLevels ()
+    {
+        const levels = GAME_BALANCE.difficulty.levels ?? ['easy', 'normal', 'hard'];
+
+        return this.newbieUnlocked ? levels : levels.filter((level) => level !== 'newbie');
     }
 
     openOptionsPanel ()
@@ -226,9 +240,9 @@ export class MainMenu extends Scene
             fontSize: 26,
             color: '#ffd166'
         }).setOrigin(0.5);
+        this.optionsDifficultyLabel = diffLabel;
 
         const updateDiff = () => {
-            diffLabel.setText(`Difficulte: ${this.selectedDifficulty.toUpperCase()}`);
             this.refreshOptionsLabel();
         };
 
@@ -569,6 +583,8 @@ export class MainMenu extends Scene
             this.optionsPanel = null;
         }
 
+        this.optionsDifficultyLabel = null;
+
         if (this.bonusPanel)
         {
             this.bonusPanel.destroy(true);
@@ -783,6 +799,37 @@ export class MainMenu extends Scene
         this.showMiniGameButton();
     }
 
+    updateNewbieSequence (key)
+    {
+        const pressed = `${key}`.toUpperCase();
+        const expected = this.newbieCode[this.newbieProgress];
+
+        if (pressed === expected)
+        {
+            this.newbieProgress += 1;
+        }
+        else
+        {
+            this.newbieProgress = pressed === this.newbieCode[0] ? 1 : 0;
+        }
+
+        if (this.newbieProgress < this.newbieCode.length)
+        {
+            return;
+        }
+
+        this.newbieProgress = 0;
+        this.newbieUnlocked = true;
+        this.selectedDifficulty = 'newbie';
+
+        if (typeof window !== 'undefined')
+        {
+            window.localStorage.setItem('parsec.difficulty', this.selectedDifficulty);
+        }
+
+        this.refreshOptionsLabel();
+    }
+
     updateFabienSequence (key)
     {
         const pressed = `${key}`.toUpperCase();
@@ -929,7 +976,7 @@ export class MainMenu extends Scene
         overlay.style.justifyContent = 'center';
         overlay.style.background = '#000000';
         overlay.style.zIndex = '1400';
-        overlay.style.pointerEvents = 'none';
+        overlay.style.pointerEvents = 'auto';
 
         const video = document.createElement('video');
         video.src = import.meta.env.BASE_URL + 'dist/bonus/Start.mp4';
@@ -947,9 +994,28 @@ export class MainMenu extends Scene
         gameContainer.appendChild(overlay);
         this.startVideoOverlay = overlay;
 
+        let finished = false;
         const finish = () => {
+            if (finished)
+            {
+                return;
+            }
+
+            finished = true;
             this.launchGameAfterStartVideo();
         };
+
+        this.startVideoSkipPointerHandler = () => finish();
+        this.startVideoSkipKeyHandler = (event) => {
+            if (event.code === 'Space' || event.code === 'Enter' || event.key === ' ' || event.key === 'Enter')
+            {
+                event.preventDefault();
+                finish();
+            }
+        };
+
+        overlay.addEventListener('pointerdown', this.startVideoSkipPointerHandler);
+        window.addEventListener('keydown', this.startVideoSkipKeyHandler, true);
 
         video.onended = finish;
         video.onerror = finish;
@@ -991,6 +1057,18 @@ export class MainMenu extends Scene
             }
         }
 
+        if (this.startVideoSkipPointerHandler)
+        {
+            this.startVideoOverlay.removeEventListener('pointerdown', this.startVideoSkipPointerHandler);
+            this.startVideoSkipPointerHandler = null;
+        }
+
+        if (this.startVideoSkipKeyHandler)
+        {
+            window.removeEventListener('keydown', this.startVideoSkipKeyHandler, true);
+            this.startVideoSkipKeyHandler = null;
+        }
+
         if (this.startVideoOverlay.parentNode)
         {
             this.startVideoOverlay.parentNode.removeChild(this.startVideoOverlay);
@@ -1016,7 +1094,7 @@ export class MainMenu extends Scene
 
     cycleDifficulty ()
     {
-        const levels = GAME_BALANCE.difficulty.levels ?? ['easy', 'normal', 'hard'];
+        const levels = this.getAvailableDifficultyLevels();
         const currentIndex = levels.indexOf(this.selectedDifficulty);
         const nextIndex = (currentIndex + 1) % levels.length;
 
@@ -1032,6 +1110,11 @@ export class MainMenu extends Scene
 
     refreshOptionsLabel ()
     {
+        if (this.optionsDifficultyLabel)
+        {
+            this.optionsDifficultyLabel.setText(`Difficulte: ${this.selectedDifficulty.toUpperCase()}`);
+        }
+
         if (this.optionsHint)
         {
             this.optionsHint.setText(`Difficulty: ${this.selectedDifficulty.toUpperCase()}`);
