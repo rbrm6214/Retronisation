@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="768" viewBox="0 0 1024 768">
+  <rect width="1024" height="768" fill="#121920"/>
+  <rect x="180" y="120" width="664" height="420" rx="14" fill="#1f2b37" stroke="#6d8aa6" stroke-width="5"/>
+  <rect x="220" y="160" width="584" height="340" fill="#05090f"/>
+  <rect x="310" y="230" width="404" height="180" rx="8" fill="#5f0b14" stroke="#f36c6c" stroke-width="5"/>
+  <text x="512" y="300" text-anchor="middle" font-family="Arial Black" font-size="56" fill="#ffd8d8">ERREUR CRITIQUE</text>
+  <text x="512" y="360" text-anchor="middle" font-family="Arial" font-size="36" fill="#ffe9e9">CODE: PARSEC-0x99</text>
+  <text x="512" y="622" text-anchor="middle" font-family="Arial" font-size="40" fill="#b7c7d9">La nostalgie s'éteint net</text>
+</svg>

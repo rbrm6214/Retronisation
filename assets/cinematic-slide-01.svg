@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="768" viewBox="0 0 1024 768">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#7fb3e8"/>
+      <stop offset="100%" stop-color="#ffdca2"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="768" fill="url(#sky)"/>
+  <circle cx="860" cy="120" r="58" fill="#fff1b3"/>
+  <rect x="0" y="430" width="1024" height="338" fill="#6f8d52"/>
+  <rect x="80" y="320" width="360" height="180" rx="12" fill="#8a5a3a"/>
+  <rect x="580" y="300" width="360" height="200" rx="12" fill="#7d4d2d"/>
+  <text x="80" y="110" font-family="Arial Black" font-size="54" fill="#ffffff">MARCHÉ AUX PUCES</text>
+  <text x="80" y="170" font-family="Arial Black" font-size="40" fill="#f9f4dd">MORNAS - 21/06/2026</text>
+</svg>

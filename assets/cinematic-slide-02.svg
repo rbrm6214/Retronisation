@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="768" viewBox="0 0 1024 768">
+  <rect width="1024" height="768" fill="#2a2f38"/>
+  <circle cx="512" cy="260" r="190" fill="#4d647d" opacity="0.65"/>
+  <ellipse cx="512" cy="220" rx="120" ry="130" fill="#e9c39c"/>
+  <ellipse cx="512" cy="165" rx="140" ry="65" fill="#dadde5"/>
+  <ellipse cx="512" cy="305" rx="95" ry="55" fill="#f1f2f6"/>
+  <circle cx="472" cy="230" r="26" fill="none" stroke="#2f3640" stroke-width="6"/>
+  <circle cx="552" cy="230" r="26" fill="none" stroke="#2f3640" stroke-width="6"/>
+  <rect x="498" y="226" width="28" height="6" fill="#2f3640"/>
+  <text x="512" y="560" text-anchor="middle" font-family="Arial Black" font-size="58" fill="#d9ecff">FABIEN</text>
+  <text x="512" y="620" text-anchor="middle" font-family="Arial" font-size="34" fill="#c6d6e6">Collectionneur rétro passionné</text>
+</svg>
